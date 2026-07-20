@@ -28,7 +28,6 @@ Requires Node 22+ and pnpm (`npm i -g pnpm`).
 
 ```bash
 pnpm install        # downloads Electron; no build tools needed
-pnpm gen:icons      # generates app/tray icons (committed script, run once)
 pnpm dev            # launches the app with hot reload
 ```
 
@@ -41,7 +40,7 @@ pnpm dist:mac       # dmg    |  pnpm dist:linux  # AppImage
 
 ## 5-minute verification checklist
 
-1. `pnpm install && pnpm gen:icons && pnpm dev` — main window opens with onboarding.
+1. `pnpm install && pnpm dev` — main window opens with onboarding.
 2. Complete onboarding: mic meter moves, download **Whisper Base** (~85 MB, one time),
    keep or change the shortcut (default `Ctrl+Shift+Space`).
 3. Open Notepad, click into it, press the shortcut → floating bar appears with waveform.

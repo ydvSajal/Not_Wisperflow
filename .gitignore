@@ -5,3 +5,5 @@ release/
 *.log
 .env
 .DS_Store
+*.tsbuildinfo
+.model-cache/
