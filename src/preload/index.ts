@@ -25,6 +25,18 @@ const api: WhisprApi = {
   sendAudio: (pcm, durationMs) => ipcRenderer.invoke(IPC.dictationAudio, pcm, durationMs),
   reportCaptureError: (message) => ipcRenderer.invoke(IPC.dictationCaptureError, message),
 
+  importAudio: (pcm, durationMs) => ipcRenderer.invoke(IPC.importAudio, pcm, durationMs),
+
+  listReplacements: () => ipcRenderer.invoke(IPC.replacementsList),
+  addReplacement: (input) => ipcRenderer.invoke(IPC.replacementsAdd, input),
+  deleteReplacement: (id) => ipcRenderer.invoke(IPC.replacementsDelete, id),
+
+  listNotes: (search) => ipcRenderer.invoke(IPC.notesList, search),
+  createNote: (title) => ipcRenderer.invoke(IPC.notesCreate, title),
+  updateNote: (id, patch) => ipcRenderer.invoke(IPC.notesUpdate, id, patch),
+  deleteNote: (id) => ipcRenderer.invoke(IPC.notesDelete, id),
+  appendToNote: (id, text) => ipcRenderer.invoke(IPC.notesAppend, id, text),
+
   listHistory: (query: HistoryQuery) => ipcRenderer.invoke(IPC.historyList, query),
   deleteHistory: (id) => ipcRenderer.invoke(IPC.historyDelete, id),
   clearHistory: () => ipcRenderer.invoke(IPC.historyClear),

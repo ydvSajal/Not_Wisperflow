@@ -11,6 +11,19 @@ export const IPC = {
   /** Bar reports mic failure (permission denied etc.) */
   dictationCaptureError: 'dictation:capture-error',
 
+  /** Transcribe an imported audio file (no paste); returns the saved record */
+  importAudio: 'import:audio',
+
+  replacementsList: 'replacements:list',
+  replacementsAdd: 'replacements:add',
+  replacementsDelete: 'replacements:delete',
+
+  notesList: 'notes:list',
+  notesCreate: 'notes:create',
+  notesUpdate: 'notes:update',
+  notesDelete: 'notes:delete',
+  notesAppend: 'notes:append',
+
   historyList: 'history:list',
   historyDelete: 'history:delete',
   historyClear: 'history:clear',

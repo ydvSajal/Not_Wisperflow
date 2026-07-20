@@ -14,10 +14,15 @@ export function BarApp(): React.JSX.Element | null {
   const [elapsed, setElapsed] = useState(0)
   const recorderRef = useRef<MicRecorder | null>(null)
   const soundsEnabled = useRef(true)
+  const [translateTarget, setTranslateTarget] = useState('en')
 
   useEffect(() => {
-    void window.api.getSettings().then((s) => (soundsEnabled.current = s.sounds))
-    return window.api.onSettingsChanged((s) => (soundsEnabled.current = s.sounds))
+    const apply = (s: { sounds: boolean; translateTarget: string }): void => {
+      soundsEnabled.current = s.sounds
+      setTranslateTarget(s.translateTarget)
+    }
+    void window.api.getSettings().then(apply)
+    return window.api.onSettingsChanged(apply)
   }, [])
 
   const onLevel = useCallback((level: number) => {
@@ -97,7 +102,11 @@ export function BarApp(): React.JSX.Element | null {
         {state.phase === 'transcribing' && (
           <>
             <Loader2 className="h-4 w-4 shrink-0 animate-spin text-accent" />
-            <span className="text-sm text-ink-dim">Transcribing…</span>
+            <span className="text-sm text-ink-dim">
+              {state.mode === 'translate'
+                ? `Translating to ${translateTarget.toUpperCase()}…`
+                : 'Transcribing…'}
+            </span>
           </>
         )}
         {state.phase === 'result' && (
@@ -114,6 +123,11 @@ export function BarApp(): React.JSX.Element | null {
         )}
         {state.phase === 'recording' && (
           <span className="ml-1 hidden shrink-0 items-center gap-1 text-[11px] text-ink-dim sm:flex">
+            {state.mode === 'translate' && (
+              <span className="rounded bg-accent/20 px-1.5 py-0.5 font-semibold text-accent-soft">
+                → {translateTarget.toUpperCase()}
+              </span>
+            )}
             <Mic className="h-3 w-3" /> Esc cancels
           </span>
         )}

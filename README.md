@@ -14,8 +14,14 @@ into whatever app you're using. Local-first, zero subscriptions, zero required A
   - **Cloud** — any OpenAI-compatible endpoint (Groq free tier, OpenAI) with your own key
 - 📋 Auto-paste into the focused app (clipboard restored afterwards, optional)
 - ✨ Optional AI cleanup pass (punctuation, filler-word removal) via any OpenAI-compatible LLM
-- 🗂️ History with search, copy, delete
+- 🌐 Translation hotkey: a second shortcut that dictates in any language and pastes the
+  translation (target language configurable)
+- 📚 Dictionary: custom replacements (plain or regex) fix words Whisper keeps mishearing
+- 🗂️ History with search, copy, delete — plus drag-and-drop **audio file import**
+  (wav/mp3/ogg/m4a) transcribed straight into history
+- 📝 Notes: append dictations into named notes, autosaving editor with search
 - 📊 Stats: total words, average WPM, speaking time, day streak, 30-day chart
+- 🖱️ Tray quick controls: engine, auto-paste, sounds, AI cleanup without opening the app
 - 🚀 First-run onboarding: mic check → model download → shortcut → live test
 - 🖥️ Tray app, launch-at-login, single instance
 

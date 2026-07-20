@@ -116,6 +116,7 @@ Env vars (all optional, listed in `.env.example`): `WHISPRFLOW_MODEL_DIR`, `WHIS
 
 ## Roadmap ("Later" — see docs/milestones/LATER.md for per-task specs)
 
-Translation hotkey · tray quick-toggles · dictionary/custom vocabulary · notes system ·
-meeting transcription · audio-file import · auto-updater. Explicit non-goals for now:
-auth, telemetry, code signing, paid services.
+Shipped in stage 2 (see AS-BUILT.md § M7): translation hotkey, tray quick controls,
+dictionary/custom vocabulary, audio-file import, notes system.
+Remaining: meeting transcription (design doc first) · auto-updater (needs public releases).
+Explicit non-goals for now: auth, telemetry, code signing, paid services.

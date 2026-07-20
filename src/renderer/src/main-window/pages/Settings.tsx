@@ -4,6 +4,7 @@ import { Button, Card, Field, Input, Select, Toggle } from '@/components/ui'
 import { useToast } from '@/components/Toast'
 import { HotkeyRecorder } from '../components/HotkeyRecorder'
 import { ModelList } from '../components/ModelList'
+import { DictionaryCard } from '../components/DictionaryCard'
 
 const LANGUAGES: { value: string; label: string }[] = [
   { value: 'auto', label: 'Auto-detect' },
@@ -55,8 +56,42 @@ export function SettingsPage({
     <div className="mx-auto max-w-3xl space-y-5 px-8 py-8">
       <h1 className="text-lg font-semibold">Settings</h1>
 
-      <Card title="Shortcut" subtitle="Press it anywhere to start/stop dictation. Esc cancels a recording.">
-        <HotkeyRecorder value={settings.hotkey} onSave={(hotkey) => save({ hotkey })} />
+      <Card title="Shortcuts" subtitle="Press anywhere to start/stop dictation. Esc cancels a recording.">
+        <Field label="Dictate">
+          <HotkeyRecorder value={settings.hotkey} onSave={(hotkey) => save({ hotkey })} />
+        </Field>
+        <div className="mt-4 space-y-3">
+          <Field label="Dictate & translate (needs an AI cleanup API key below)">
+            <div className="flex flex-wrap items-center gap-2">
+              <HotkeyRecorder
+                value={settings.translateHotkey || 'Not set'}
+                onSave={(translateHotkey) => save({ translateHotkey })}
+              />
+              {settings.translateHotkey && (
+                <Button variant="ghost" onClick={() => save({ translateHotkey: '' })}>
+                  Disable
+                </Button>
+              )}
+              <Select
+                value={settings.translateTarget}
+                onChange={(e) => save({ translateTarget: e.target.value })}
+                title="Translate into"
+              >
+                {LANGUAGES.filter((l) => l.value !== 'auto').map((l) => (
+                  <option key={l.value} value={l.value}>
+                    → {l.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </Field>
+          {settings.translateHotkey && !settings.cleanup.apiKey && (
+            <p className="text-xs text-amber-300">
+              Translation uses the AI cleanup endpoint — add an API key in the AI cleanup card
+              or translated dictations will paste untranslated.
+            </p>
+          )}
+        </div>
       </Card>
 
       <Card title="Transcription engine">
@@ -164,6 +199,8 @@ export function SettingsPage({
           </div>
         )}
       </Card>
+
+      <DictionaryCard />
 
       <Card title="Behavior">
         <Toggle

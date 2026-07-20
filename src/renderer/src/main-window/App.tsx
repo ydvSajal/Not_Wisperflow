@@ -1,16 +1,24 @@
 import { useEffect, useState } from 'react'
-import { AudioLines, BarChart3, History as HistoryIcon, Settings as SettingsIcon } from 'lucide-react'
+import {
+  AudioLines,
+  BarChart3,
+  History as HistoryIcon,
+  NotebookPen,
+  Settings as SettingsIcon
+} from 'lucide-react'
 import type { AppSettings } from '@shared/types'
 import { HistoryPage } from './pages/History'
+import { NotesPage } from './pages/Notes'
 import { StatsPage } from './pages/Stats'
 import { SettingsPage } from './pages/Settings'
 import { Onboarding } from './pages/Onboarding'
 import { prettyHotkey } from '@/lib/format'
 
-type Page = 'history' | 'stats' | 'settings'
+type Page = 'history' | 'notes' | 'stats' | 'settings'
 
 const NAV: { id: Page; label: string; icon: typeof HistoryIcon }[] = [
   { id: 'history', label: 'History', icon: HistoryIcon },
+  { id: 'notes', label: 'Notes', icon: NotebookPen },
   { id: 'stats', label: 'Stats', icon: BarChart3 },
   { id: 'settings', label: 'Settings', icon: SettingsIcon }
 ]
@@ -62,6 +70,7 @@ export function App(): React.JSX.Element | null {
       </aside>
       <main className="flex-1 overflow-y-auto">
         {page === 'history' && <HistoryPage />}
+        {page === 'notes' && <NotesPage />}
         {page === 'stats' && <StatsPage />}
         {page === 'settings' && <SettingsPage settings={settings} onChange={setSettings} />}
       </main>

@@ -7,23 +7,39 @@ import { globalShortcut } from 'electron'
  */
 export class HotkeyManager {
   private current = ''
+  private currentTranslate = ''
   private escapeRegistered = false
 
   constructor(
     private onToggle: () => void,
-    private onCancel: () => void
+    private onCancel: () => void,
+    private onToggleTranslate: () => void
   ) {}
 
   apply(accelerator: string): { ok: boolean; reason?: string } {
+    return this.register(accelerator, 'current', this.onToggle)
+  }
+
+  /** Register/replace the translate shortcut. Empty string disables it. */
+  applyTranslate(accelerator: string): { ok: boolean; reason?: string } {
+    return this.register(accelerator, 'currentTranslate', this.onToggleTranslate)
+  }
+
+  private register(
+    accelerator: string,
+    slot: 'current' | 'currentTranslate',
+    handler: () => void
+  ): { ok: boolean; reason?: string } {
     if (process.env['WHISPRFLOW_NO_HOTKEY']) return { ok: true }
-    if (this.current) {
-      globalShortcut.unregister(this.current)
-      this.current = ''
+    if (this[slot]) {
+      globalShortcut.unregister(this[slot])
+      this[slot] = ''
     }
+    if (!accelerator) return { ok: true }
     try {
-      const ok = globalShortcut.register(accelerator, this.onToggle)
+      const ok = globalShortcut.register(accelerator, handler)
       if (!ok) return { ok: false, reason: 'Shortcut is already in use by another app' }
-      this.current = accelerator
+      this[slot] = accelerator
       return { ok: true }
     } catch (err) {
       return { ok: false, reason: err instanceof Error ? err.message : 'Invalid shortcut' }
@@ -32,7 +48,7 @@ export class HotkeyManager {
 
   /** Test-register an accelerator without keeping it. */
   validate(accelerator: string): { ok: boolean; reason?: string } {
-    if (accelerator === this.current) return { ok: true }
+    if (accelerator === this.current || accelerator === this.currentTranslate) return { ok: true }
     try {
       const ok = globalShortcut.register(accelerator, () => undefined)
       if (ok) globalShortcut.unregister(accelerator)

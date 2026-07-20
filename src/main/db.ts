@@ -1,7 +1,14 @@
 import { app } from 'electron'
 import { DatabaseSync } from 'node:sqlite'
 import { join } from 'node:path'
-import type { DailyStat, HistoryQuery, StatsSummary, TranscriptionRecord } from '@shared/types'
+import type {
+  DailyStat,
+  HistoryQuery,
+  Note,
+  Replacement,
+  StatsSummary,
+  TranscriptionRecord
+} from '@shared/types'
 
 let db: DatabaseSync | null = null
 
@@ -33,6 +40,18 @@ function getDb(): DatabaseSync {
       created_at INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_transcriptions_created ON transcriptions(created_at);
+    CREATE TABLE IF NOT EXISTS replacements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pattern TEXT NOT NULL,
+      replacement TEXT NOT NULL,
+      is_regex INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS notes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL DEFAULT '',
+      updated_at INTEGER NOT NULL
+    );
   `)
   return db
 }
@@ -106,6 +125,122 @@ export function deleteTranscription(id: number): void {
 
 export function clearHistory(): void {
   getDb().exec(`DELETE FROM transcriptions`)
+}
+
+// ---- Replacements (custom vocabulary) ----
+
+interface ReplacementRow {
+  id: number
+  pattern: string
+  replacement: string
+  is_regex: number
+}
+
+export function listReplacements(): Replacement[] {
+  const rows = getDb()
+    .prepare(`SELECT * FROM replacements ORDER BY id`)
+    .all() as unknown as ReplacementRow[]
+  return rows.map((r) => ({
+    id: r.id,
+    pattern: r.pattern,
+    replacement: r.replacement,
+    isRegex: r.is_regex === 1
+  }))
+}
+
+export function addReplacement(input: Omit<Replacement, 'id'>): Replacement {
+  if (!input.pattern) throw new Error('Pattern cannot be empty')
+  if (input.isRegex) new RegExp(input.pattern) // throws on invalid regex before saving
+  const result = getDb()
+    .prepare(`INSERT INTO replacements (pattern, replacement, is_regex) VALUES (?, ?, ?)`)
+    .run(input.pattern, input.replacement, input.isRegex ? 1 : 0)
+  return { id: Number(result.lastInsertRowid), ...input }
+}
+
+export function deleteReplacement(id: number): void {
+  getDb().prepare(`DELETE FROM replacements WHERE id = ?`).run(id)
+}
+
+function escapeRegex(literal: string): string {
+  return literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** Apply all stored replacements (case-insensitive). Invalid regex rows are skipped. */
+export function applyReplacements(text: string): string {
+  let output = text
+  for (const r of listReplacements()) {
+    try {
+      const source = r.isRegex ? r.pattern : `\\b${escapeRegex(r.pattern)}\\b`
+      output = output.replace(new RegExp(source, 'gi'), r.replacement)
+    } catch {
+      // stored before validation existed or engine mismatch — skip silently
+    }
+  }
+  return output
+}
+
+// ---- Notes ----
+
+interface NoteRow {
+  id: number
+  title: string
+  body: string
+  updated_at: number
+}
+
+function toNote(row: NoteRow): Note {
+  return {
+    id: row.id,
+    title: row.title,
+    body: row.body,
+    updatedAt: new Date(row.updated_at).toISOString()
+  }
+}
+
+export function listNotes(search?: string): Note[] {
+  const rows = search
+    ? (getDb()
+        .prepare(
+          `SELECT * FROM notes WHERE title LIKE ? OR body LIKE ? ORDER BY updated_at DESC`
+        )
+        .all(`%${search}%`, `%${search}%`) as unknown as NoteRow[])
+    : (getDb().prepare(`SELECT * FROM notes ORDER BY updated_at DESC`).all() as unknown as NoteRow[])
+  return rows.map(toNote)
+}
+
+export function createNote(title: string): Note {
+  const now = Date.now()
+  const result = getDb()
+    .prepare(`INSERT INTO notes (title, body, updated_at) VALUES (?, '', ?)`)
+    .run(title || 'Untitled note', now)
+  return { id: Number(result.lastInsertRowid), title: title || 'Untitled note', body: '', updatedAt: new Date(now).toISOString() }
+}
+
+export function updateNote(id: number, patch: { title?: string; body?: string }): Note {
+  const row = getDb().prepare(`SELECT * FROM notes WHERE id = ?`).get(id) as unknown as
+    | NoteRow
+    | undefined
+  if (!row) throw new Error(`Note ${id} not found`)
+  const title = patch.title ?? row.title
+  const body = patch.body ?? row.body
+  const now = Date.now()
+  getDb()
+    .prepare(`UPDATE notes SET title = ?, body = ?, updated_at = ? WHERE id = ?`)
+    .run(title, body, now, id)
+  return { id, title, body, updatedAt: new Date(now).toISOString() }
+}
+
+export function deleteNote(id: number): void {
+  getDb().prepare(`DELETE FROM notes WHERE id = ?`).run(id)
+}
+
+export function appendToNote(id: number, text: string): Note {
+  const row = getDb().prepare(`SELECT * FROM notes WHERE id = ?`).get(id) as unknown as
+    | NoteRow
+    | undefined
+  if (!row) throw new Error(`Note ${id} not found`)
+  const body = row.body ? `${row.body}\n\n${text}` : text
+  return updateNote(id, { body })
 }
 
 function localDayKey(ms: number): string {

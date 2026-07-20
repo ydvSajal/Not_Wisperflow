@@ -18,7 +18,8 @@ if (!gotLock) {
   })
   const hotkeys = new HotkeyManager(
     () => dictation.toggle(),
-    () => dictation.cancel()
+    () => dictation.cancel(),
+    () => dictation.toggle('translate')
   )
 
   void app.whenReady().then(() => {
@@ -34,8 +35,13 @@ if (!gotLock) {
     createMainWindow()
     createTray(() => dictation.toggle())
 
-    const result = hotkeys.apply(settings.get().hotkey)
+    const cfg = settings.get()
+    const result = hotkeys.apply(cfg.hotkey)
     if (!result.ok) console.error('[hotkey] failed to register:', result.reason)
+    const translateResult = hotkeys.applyTranslate(cfg.translateHotkey)
+    if (!translateResult.ok) {
+      console.error('[hotkey] translate shortcut failed:', translateResult.reason)
+    }
   })
 
   // Tray app: closing all windows must not quit

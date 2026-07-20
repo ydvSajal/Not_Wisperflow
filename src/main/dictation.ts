@@ -1,9 +1,9 @@
-import type { BarState, DictationPhase } from '@shared/types'
+import type { BarState, DictationMode, DictationPhase, TranscriptionRecord } from '@shared/types'
 import { EVT } from '@shared/ipc-channels'
 import { settings } from './settings'
 import { transcribe } from './transcription'
-import { cleanupText } from './cleanup'
-import { insertTranscription } from './db'
+import { cleanupText, translateText } from './cleanup'
+import { applyReplacements, insertTranscription } from './db'
 import { pasteText } from './paste'
 import { getBarWindow, getMainWindow, hideBar, showBar } from './windows'
 
@@ -18,6 +18,7 @@ const MAX_RECORDING_MS = 5 * 60 * 1000
  */
 export class DictationController {
   private phase: DictationPhase = 'idle'
+  private mode: DictationMode = 'dictate'
   private startedAt = 0
   private session = 0
   private hideTimer: NodeJS.Timeout | null = null
@@ -38,22 +39,23 @@ export class DictationController {
     this.maxTimer = null
   }
 
-  toggle(): void {
+  toggle(mode: DictationMode = 'dictate'): void {
     if (this.phase === 'idle' || this.phase === 'result' || this.phase === 'error') {
-      this.startRecording()
+      this.startRecording(mode)
     } else if (this.phase === 'recording') {
       this.stopRecording()
     }
     // 'transcribing': ignore extra presses
   }
 
-  private startRecording(): void {
+  private startRecording(mode: DictationMode): void {
     this.clearTimers()
     this.session++
     this.phase = 'recording'
+    this.mode = mode
     this.startedAt = Date.now()
     showBar()
-    this.setBar({ phase: 'recording', startedAt: this.startedAt })
+    this.setBar({ phase: 'recording', mode, startedAt: this.startedAt })
     getBarWindow()?.webContents.send(EVT.captureStart)
     this.hooks.onRecordingStart()
     this.maxTimer = setTimeout(() => this.stopRecording(), MAX_RECORDING_MS)
@@ -62,7 +64,7 @@ export class DictationController {
   private stopRecording(): void {
     if (this.phase !== 'recording') return
     this.phase = 'transcribing'
-    this.setBar({ phase: 'transcribing' })
+    this.setBar({ phase: 'transcribing', mode: this.mode })
     getBarWindow()?.webContents.send(EVT.captureStop, { discard: false })
     this.hooks.onRecordingEnd()
     if (this.maxTimer) clearTimeout(this.maxTimer)
@@ -95,8 +97,12 @@ export class DictationController {
         this.showError('No speech detected')
         return
       }
-      const text = await cleanupText(raw, cfg.cleanup)
+      const processed =
+        this.mode === 'translate'
+          ? await translateText(raw, cfg.translateTarget, cfg.cleanup)
+          : await cleanupText(raw, cfg.cleanup)
       if (session !== this.session) return
+      const text = applyReplacements(processed)
       const record = insertTranscription({
         text,
         rawText: raw,
@@ -132,4 +138,28 @@ export class DictationController {
     this.setBar({ phase: 'error', error: message })
     this.hideTimer = setTimeout(() => this.toIdle(), ERROR_VISIBLE_MS)
   }
+}
+
+/**
+ * Transcribe an imported audio file into history. Shares the dictation
+ * post-processing (cleanup + replacements) but never pastes or touches the bar.
+ */
+export async function importAudio(
+  pcm: Float32Array,
+  durationMs: number
+): Promise<TranscriptionRecord> {
+  const cfg = settings.get()
+  const result = await transcribe({ pcm, language: cfg.language }, cfg)
+  if (!result.text) throw new Error('No speech detected in this file')
+  const cleaned = await cleanupText(result.text, cfg.cleanup)
+  const text = applyReplacements(cleaned)
+  const record = insertTranscription({
+    text,
+    rawText: result.text,
+    durationMs,
+    engine: result.engine,
+    model: result.model
+  })
+  getMainWindow()?.webContents.send(EVT.dictationDone, { text, record })
+  return record
 }

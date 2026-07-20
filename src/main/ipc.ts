@@ -7,9 +7,10 @@ import { listLocalModels } from './transcription/model-manager'
 import { localWhisper } from './transcription/local-whisper'
 import { testCloudConfig } from './transcription/cloud'
 import { testCleanupConfig } from './cleanup'
-import { createMainWindow, getMainWindow } from './windows'
-import type { DictationController } from './dictation'
+import { createMainWindow } from './windows'
+import { importAudio, type DictationController } from './dictation'
 import type { HotkeyManager } from './hotkeys'
+import type { Replacement } from '@shared/types'
 
 function broadcast(channel: string, payload: unknown): void {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -20,11 +21,7 @@ function broadcast(channel: string, payload: unknown): void {
 export function registerIpc(dictation: DictationController, hotkeys: HotkeyManager): void {
   ipcMain.handle(IPC.settingsGet, () => settings.get())
 
-  ipcMain.handle(IPC.settingsSet, (_e, patch: Partial<AppSettings>) => {
-    const next = settings.set(patch)
-    broadcast(EVT.settingsChanged, next)
-    return next
-  })
+  ipcMain.handle(IPC.settingsSet, (_e, patch: Partial<AppSettings>) => settings.set(patch))
 
   ipcMain.handle(IPC.settingsValidateHotkey, (_e, accelerator: string) =>
     hotkeys.validate(accelerator)
@@ -39,6 +36,24 @@ export function registerIpc(dictation: DictationController, hotkeys: HotkeyManag
   ipcMain.handle(IPC.dictationCaptureError, (_e, message: string) =>
     dictation.onCaptureError(message)
   )
+
+  ipcMain.handle(IPC.importAudio, (_e, pcm: Float32Array, durationMs: number) =>
+    importAudio(pcm, durationMs)
+  )
+
+  ipcMain.handle(IPC.replacementsList, () => db.listReplacements())
+  ipcMain.handle(IPC.replacementsAdd, (_e, input: Omit<Replacement, 'id'>) =>
+    db.addReplacement(input)
+  )
+  ipcMain.handle(IPC.replacementsDelete, (_e, id: number) => db.deleteReplacement(id))
+
+  ipcMain.handle(IPC.notesList, (_e, search?: string) => db.listNotes(search))
+  ipcMain.handle(IPC.notesCreate, (_e, title: string) => db.createNote(title))
+  ipcMain.handle(IPC.notesUpdate, (_e, id: number, patch: { title?: string; body?: string }) =>
+    db.updateNote(id, patch)
+  )
+  ipcMain.handle(IPC.notesDelete, (_e, id: number) => db.deleteNote(id))
+  ipcMain.handle(IPC.notesAppend, (_e, id: number, text: string) => db.appendToNote(id, text))
 
   ipcMain.handle(IPC.historyList, (_e, query: HistoryQuery) => db.listHistory(query))
   ipcMain.handle(IPC.historyDelete, (_e, id: number) => db.deleteTranscription(id))
@@ -79,7 +94,8 @@ export function registerIpc(dictation: DictationController, hotkeys: HotkeyManag
     broadcast(EVT.modelProgress, progress)
   })
 
-  // Keep OS login item in sync with the setting
+  // Side effects of any settings change (from the UI, tray, or onboarding):
+  // sync the OS login item, re-register hotkeys with rollback, notify all windows.
   settings.on('changed', (next: AppSettings, prev: AppSettings) => {
     if (next.launchAtLogin !== prev.launchAtLogin) {
       app.setLoginItemSettings({ openAtLogin: next.launchAtLogin })
@@ -90,8 +106,17 @@ export function registerIpc(dictation: DictationController, hotkeys: HotkeyManag
         // Roll back so the app never ends up with no working hotkey
         hotkeys.apply(prev.hotkey)
         settings.set({ hotkey: prev.hotkey })
-        getMainWindow()?.webContents.send(EVT.settingsChanged, settings.get())
+        return // the rollback re-fires 'changed', which broadcasts
       }
     }
+    if (next.translateHotkey !== prev.translateHotkey) {
+      const result = hotkeys.applyTranslate(next.translateHotkey)
+      if (!result.ok) {
+        hotkeys.applyTranslate(prev.translateHotkey)
+        settings.set({ translateHotkey: prev.translateHotkey })
+        return
+      }
+    }
+    broadcast(EVT.settingsChanged, next)
   })
 }

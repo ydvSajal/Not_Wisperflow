@@ -6,6 +6,8 @@ import type { AppSettings } from '@shared/types'
 
 export const DEFAULT_SETTINGS: AppSettings = {
   hotkey: 'CommandOrControl+Shift+Space',
+  translateHotkey: '',
+  translateTarget: 'en',
   engine: 'local',
   localModel: 'onnx-community/whisper-base',
   language: 'auto',

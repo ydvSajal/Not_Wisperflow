@@ -5,6 +5,8 @@ import type {
   HistoryQuery,
   LocalModelInfo,
   ModelDownloadProgress,
+  Note,
+  Replacement,
   StatsSummary,
   TranscriptionRecord
 } from './types'
@@ -20,6 +22,19 @@ export interface WhisprApi {
   /** Bar window only: deliver captured PCM (16kHz mono) and its duration */
   sendAudio(pcm: Float32Array, durationMs: number): Promise<void>
   reportCaptureError(message: string): Promise<void>
+
+  /** Transcribe an imported audio file into history (no paste) */
+  importAudio(pcm: Float32Array, durationMs: number): Promise<TranscriptionRecord>
+
+  listReplacements(): Promise<Replacement[]>
+  addReplacement(input: Omit<Replacement, 'id'>): Promise<Replacement>
+  deleteReplacement(id: number): Promise<void>
+
+  listNotes(search?: string): Promise<Note[]>
+  createNote(title: string): Promise<Note>
+  updateNote(id: number, patch: { title?: string; body?: string }): Promise<Note>
+  deleteNote(id: number): Promise<void>
+  appendToNote(id: number, text: string): Promise<Note>
 
   listHistory(query: HistoryQuery): Promise<TranscriptionRecord[]>
   deleteHistory(id: number): Promise<void>

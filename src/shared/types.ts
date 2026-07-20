@@ -18,6 +18,10 @@ export interface CleanupConfig {
 export interface AppSettings {
   /** Electron accelerator for toggling dictation */
   hotkey: string
+  /** Second accelerator: dictate → translate → paste. Empty string = disabled */
+  translateHotkey: string
+  /** ISO-639-1 target language for the translate hotkey */
+  translateTarget: string
   engine: 'local' | 'cloud'
   /** HuggingFace ONNX model id for local whisper */
   localModel: string
@@ -34,9 +38,13 @@ export interface AppSettings {
 
 export type DictationPhase = 'idle' | 'recording' | 'transcribing' | 'result' | 'error'
 
+export type DictationMode = 'dictate' | 'translate'
+
 /** State pushed from main to the floating bar window */
 export interface BarState {
   phase: DictationPhase
+  /** Which flow is running; bar shows a translate hint when 'translate' */
+  mode?: DictationMode
   /** Set when phase === 'result' */
   transcript?: string
   /** Set when phase === 'error' */
@@ -105,4 +113,20 @@ export interface MicCheckResult {
 export interface DictationResult {
   text: string
   record: TranscriptionRecord | null
+}
+
+/** User-defined text replacement applied after transcription */
+export interface Replacement {
+  id: number
+  pattern: string
+  replacement: string
+  isRegex: boolean
+}
+
+export interface Note {
+  id: number
+  title: string
+  body: string
+  /** ISO timestamp of last edit */
+  updatedAt: string
 }
