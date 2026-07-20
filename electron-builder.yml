@@ -1,0 +1,27 @@
+appId: com.sajal.whisprflow
+productName: WhisprFlow
+directories:
+  output: release
+  buildResources: build
+files:
+  - out/**
+  - resources/**
+  - package.json
+# Personal app: skip asar so worker threads and ONNX runtime resolve modules
+# from a plain directory with zero path tricks.
+asar: false
+# All native deps (onnxruntime-node, sharp) ship prebuilt N-API binaries.
+npmRebuild: false
+win:
+  target: nsis
+  icon: build/icon.png
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+mac:
+  target: dmg
+  icon: build/icon.png
+linux:
+  target: AppImage
+  icon: build/icon.png
+  category: Utility
