@@ -106,7 +106,7 @@ export function SettingsPage({
       </Card>
 
       <Card title="Transcription engine">
-        <div className="mb-4 flex flex-wrap gap-2">
+        <div className="mb-4 flex flex-wrap items-center gap-2">
           {(
             [
               ['local', 'Local (offline, free)'],
@@ -117,10 +117,10 @@ export function SettingsPage({
             <button
               key={engine}
               onClick={() => save({ engine })}
-              className={`rounded-lg px-4 py-2 text-sm transition-colors ${
+              className={`flex-none whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                 settings.engine === engine
                   ? 'bg-accent text-white'
-                  : 'bg-surface-2 text-ink-dim hover:text-ink'
+                  : 'bg-surface-2 text-ink-dim hover:bg-surface-3 hover:text-ink'
               }`}
             >
               {label}
