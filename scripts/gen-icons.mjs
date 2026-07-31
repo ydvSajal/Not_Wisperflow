@@ -1,5 +1,5 @@
 // Generates the app + tray icons as PNGs with zero image dependencies.
-// Draws a purple rounded square with a white microphone glyph.
+// Draws a purple rounded square with an off-white "S" glyph.
 import { deflateSync } from 'node:zlib'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -53,10 +53,32 @@ function encodePng(rgba, width, height) {
 
 const lerp = (a, b, t) => a + (b - a) * t
 
+/*
+ * The "S" is two tangent circular arcs. Both lobes share a radius and sit one
+ * radius above and below the centre, so they meet exactly at (128,128) with a
+ * common horizontal tangent, which is what makes the join look continuous.
+ * Cutting the right/lower-right out of the upper lobe is what turns it from an
+ * O into an S; the lower lobe is that same arc rotated 180 degrees.
+ */
+const S_R = 33 // lobe centre-line radius
+const S_HALF = 14 // half the stroke thickness
+const S_TERMINAL = (-25 * Math.PI) / 180 // angle the upper-right terminal is cut at
+const INK = [0xf4, 0xf1, 0xed] // off-white, matches --c-canvas
+
+function onUpperArc(x, y) {
+  const dx = x - 128
+  const dy = y - (128 - S_R)
+  if (Math.abs(Math.hypot(dx, dy) - S_R) > S_HALF) return false
+  const ang = Math.atan2(dy, dx) // y grows downward: -PI/2 is up, +PI/2 is down
+  return !(ang > S_TERMINAL && ang < Math.PI / 2)
+}
+const inGlyph = (x, y) => onUpperArc(x, y) || onUpperArc(256 - x, 256 - y)
+
+const SS = 4 // supersampling grid; curves alias badly at 32px without it
+
 function drawIcon(size, { background }) {
   const rgba = Buffer.alloc(size * size * 4)
   const s = size / 256 // all coordinates below are in 256-space
-  const cx = 128
   const cornerR = 56
 
   const inRoundedSquare = (x, y) => {
@@ -64,48 +86,41 @@ function drawIcon(size, { background }) {
     const dy = Math.max(cornerR - y, y - (256 - cornerR), 0)
     return dx * dx + dy * dy <= cornerR * cornerR
   }
-  // Mic capsule: rounded rect x 104..152, y 52..140
-  const inCapsule = (x, y) => {
-    const r = 24
-    const px = Math.min(Math.max(x, 104 + r), 152 - r)
-    const py = Math.min(Math.max(y, 52 + r), 140 - r)
-    return (x - px) ** 2 + (y - py) ** 2 <= r * r || (x >= 104 && x <= 152 && y >= 52 + r && y <= 140 - r)
-  }
-  // Mic cradle: lower half-ring around (128,124), radius 52, thickness 12
-  const inRing = (x, y) => {
-    if (y < 124) return false
-    const d = Math.hypot(x - cx, y - 124)
-    return d >= 46 && d <= 58
-  }
-  const inStem = (x, y) => x >= 122 && x <= 134 && y >= 176 && y <= 200
-  const inBase = (x, y) => x >= 96 && x <= 160 && y >= 198 && y <= 210
 
   for (let py = 0; py < size; py++) {
     for (let px = 0; px < size; px++) {
-      const x = px / s
-      const y = py / s
+      let sr = 0
+      let sg = 0
+      let sb = 0
+      let hits = 0
+      for (let j = 0; j < SS; j++) {
+        for (let i = 0; i < SS; i++) {
+          const x = (px + (i + 0.5) / SS) / s
+          const y = (py + (j + 0.5) / SS) / s
+          let c
+          if (inGlyph(x, y)) {
+            c = INK
+          } else if (background && inRoundedSquare(x, y)) {
+            // Matches --c-accent (#6d4aff) shading to a deeper violet.
+            const t = y / 256
+            c = [lerp(0x6d, 0x45, t), lerp(0x4a, 0x27, t), lerp(0xff, 0xc4, t)]
+          } else {
+            continue // transparent sample
+          }
+          sr += c[0]
+          sg += c[1]
+          sb += c[2]
+          hits++
+        }
+      }
       const i = (py * size + px) * 4
-      if (background && !inRoundedSquare(x, y)) continue // transparent
-      let r, g, b, a
-      if (background) {
-        // Matches --c-accent (#6d4aff) shading to a deeper violet.
-        const t = y / 256
-        r = Math.round(lerp(0x6d, 0x45, t))
-        g = Math.round(lerp(0x4a, 0x27, t))
-        b = Math.round(lerp(0xff, 0xc4, t))
-        a = 255
-      } else {
-        r = g = b = 0
-        a = 0
-      }
-      if (inCapsule(x, y) || inRing(x, y) || inStem(x, y) || inBase(x, y)) {
-        r = g = b = 255
-        a = 255
-      }
-      rgba[i] = r
-      rgba[i + 1] = g
-      rgba[i + 2] = b
-      rgba[i + 3] = a
+      if (!hits) continue // fully transparent pixel
+      // Un-premultiply: colour is the average of covering samples, alpha is
+      // the coverage fraction. Keeps edges clean over any backdrop.
+      rgba[i] = Math.round(sr / hits)
+      rgba[i + 1] = Math.round(sg / hits)
+      rgba[i + 2] = Math.round(sb / hits)
+      rgba[i + 3] = Math.round((hits / (SS * SS)) * 255)
     }
   }
   return encodePng(rgba, size, size)
