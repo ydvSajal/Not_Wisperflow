@@ -78,20 +78,7 @@ export function Onboarding({
 }): React.JSX.Element {
   const [step, setStep] = useState<Step>('welcome')
   const [micOk, setMicOk] = useState(false)
-  const [models, setModels] = useState<{ downloaded: boolean } | null>(null)
   const [tried, setTried] = useState<string | null>(null)
-
-  const refreshModels = (): void =>
-    void window.api
-      .listModels()
-      .then((list) => setModels({ downloaded: list.some((m) => m.downloaded) }))
-
-  useEffect(() => {
-    refreshModels()
-    return window.api.onModelProgress((p) => {
-      if (p.status === 'ready') refreshModels()
-    })
-  }, [])
 
   useEffect(() => window.api.onDictationDone(({ text }) => setTried(text)), [])
 
@@ -102,11 +89,10 @@ export function Onboarding({
   }
 
   const stepIndex = STEPS.indexOf(step)
-  const canContinue =
-    step === 'welcome' ||
-    (step === 'mic' && micOk) ||
-    (step === 'model' && (models?.downloaded || settings.engine === 'cloud')) ||
-    step === 'hotkey'
+  // Model download is optional here: a user can pick cloud/Sarvam in Settings
+  // later, or come back once a download finishes. Only mic access is a hard
+  // requirement, since the app cannot function at all without it.
+  const canContinue = step === 'welcome' || (step === 'mic' && micOk) || step === 'model' || step === 'hotkey'
 
   return (
     <div className="flex h-screen items-center justify-center bg-canvas px-6">
@@ -145,8 +131,9 @@ export function Onboarding({
               onSelect={(localModel) => void window.api.setSettings({ localModel })}
             />
             <p className="mt-3 text-xs text-ink-dim">
-              Prefer cloud transcription instead? Skip this and add a free Groq API key in
-              Settings → Transcription engine.
+              Downloading takes a moment in the background — Continue whenever you're ready.
+              Prefer cloud transcription instead? Add a free Groq API key later in Settings →
+              Transcription engine.
             </p>
           </Card>
         )}
