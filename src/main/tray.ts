@@ -21,7 +21,7 @@ function trayIcon(): Electron.NativeImage {
 function buildMenu(cfg: AppSettings, onToggleDictation: () => void): Menu {
   const modelName = cfg.engine === 'local' ? cfg.localModel.split('/').pop() : cfg.cloud.model
   return Menu.buildFromTemplate([
-    { label: 'Open WhisprFlow', click: () => createMainWindow() },
+    { label: 'Open NotWhisperFlow', click: () => createMainWindow() },
     { label: 'Start/Stop Dictation', click: () => onToggleDictation() },
     { type: 'separator' },
     {
@@ -70,7 +70,7 @@ function buildMenu(cfg: AppSettings, onToggleDictation: () => void): Menu {
 export function createTray(onToggleDictation: () => void): void {
   if (tray) return
   tray = new Tray(trayIcon())
-  tray.setToolTip('WhisprFlow')
+  tray.setToolTip('NotWhisperFlow')
   tray.setContextMenu(buildMenu(settings.get(), onToggleDictation))
   tray.on('click', () => createMainWindow())
   // Keep the menu in sync no matter where a setting was changed from

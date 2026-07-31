@@ -1,5 +1,5 @@
-appId: com.sajal.whisprflow
-productName: WhisprFlow
+appId: com.sajal.notwhisprflow
+productName: NotWhisperFlow
 copyright: Copyright (c) 2026 Sajal Kumar
 directories:
   output: release
@@ -31,8 +31,8 @@ nsis:
   perMachine: false
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: WhisprFlow
-  uninstallDisplayName: WhisprFlow ${version}
+  shortcutName: NotWhisperFlow
+  uninstallDisplayName: NotWhisperFlow ${version}
   # Launch straight after installing so the tray icon and hotkey are live.
   runAfterFinish: true
 mac:

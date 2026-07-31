@@ -1,5 +1,5 @@
 // Generates the app + tray icons as PNGs with zero image dependencies.
-// Draws a purple rounded square with an off-white "S" glyph.
+// Draws an off-white rounded square with a blackish-green "S" glyph.
 import { deflateSync } from 'node:zlib'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -51,8 +51,6 @@ function encodePng(rgba, width, height) {
   ])
 }
 
-const lerp = (a, b, t) => a + (b - a) * t
-
 /*
  * The "S" is two tangent circular arcs. Both lobes share a radius and sit one
  * radius above and below the centre, so they meet exactly at (128,128) with a
@@ -63,7 +61,7 @@ const lerp = (a, b, t) => a + (b - a) * t
 const S_R = 33 // lobe centre-line radius
 const S_HALF = 14 // half the stroke thickness
 const S_TERMINAL = (-25 * Math.PI) / 180 // angle the upper-right terminal is cut at
-const INK = [0xf4, 0xf1, 0xed] // off-white, matches --c-canvas
+const INK = [0x10, 0x1f, 0x16] // blackish green
 
 function onUpperArc(x, y) {
   const dx = x - 128
@@ -101,9 +99,8 @@ function drawIcon(size, { background }) {
           if (inGlyph(x, y)) {
             c = INK
           } else if (background && inRoundedSquare(x, y)) {
-            // Matches --c-accent (#6d4aff) shading to a deeper violet.
-            const t = y / 256
-            c = [lerp(0x6d, 0x45, t), lerp(0x4a, 0x27, t), lerp(0xff, 0xc4, t)]
+            // Off-white, matches --c-canvas. Flat fill, no gradient.
+            c = [0xf4, 0xf1, 0xed]
           } else {
             continue // transparent sample
           }

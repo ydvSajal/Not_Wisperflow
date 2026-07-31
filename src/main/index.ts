@@ -23,7 +23,7 @@ if (!gotLock) {
   )
 
   void app.whenReady().then(() => {
-    app.setAppUserModelId('com.sajal.whisprflow')
+    app.setAppUserModelId('com.sajal.notwhisprflow')
 
     // The bar window records audio; grant it mic access without a prompt
     session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {

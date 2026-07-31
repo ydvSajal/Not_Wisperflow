@@ -79,7 +79,7 @@ export function App(): React.JSX.Element | null {
       <aside className="flex w-56 shrink-0 flex-col gap-1 px-3 pt-11 pb-4">
         <div className="flex items-center gap-2 px-2 py-3">
           <AudioLines className="h-5 w-5 text-accent" strokeWidth={2} />
-          <span className="text-[15px] font-semibold tracking-tight">WhisprFlow</span>
+          <span className="text-[15px] font-semibold tracking-tight">NotWhisperFlow</span>
           <span className="ml-auto rounded-full bg-accent-wash px-2 py-0.5 text-[11px] font-medium text-accent-strong">
             {ENGINE_LABEL[settings.engine]}
           </span>

@@ -113,7 +113,7 @@ export function Onboarding({
       <div className="w-full max-w-xl">
         <div className="mb-6 flex items-center gap-2">
           <AudioLines className="h-6 w-6 text-accent" />
-          <span className="text-lg font-semibold">WhisprFlow setup</span>
+          <span className="text-lg font-semibold">NotWhisperFlow setup</span>
           <span className="ml-auto text-xs text-ink-dim">
             {stepIndex + 1} / {STEPS.length}
           </span>
@@ -122,7 +122,7 @@ export function Onboarding({
         {step === 'welcome' && (
           <Card title="Welcome 👋">
             <p className="text-sm leading-relaxed text-ink-dim">
-              WhisprFlow turns your voice into text anywhere on your PC: press a shortcut, talk,
+              NotWhisperFlow turns your voice into text anywhere on your PC: press a shortcut, talk,
               and the words are pasted into whatever app you're using. Free, private, and local by
               default. Let's set it up in under a minute.
             </p>
