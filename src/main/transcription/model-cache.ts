@@ -19,12 +19,20 @@ import { join, relative } from 'node:path'
 
 const MANIFEST = '.notwhisperflow-manifest.json'
 
-/** Files any usable whisper checkpoint has, beyond the .onnx weights. */
-const REQUIRED_JSON = ['config.json', 'tokenizer.json', 'preprocessor_config.json']
+/**
+ * Only a manifest we wrote ourselves, against sizes the server confirmed, is
+ * trustworthy. Manifests from 1.1.0 lack this marker: that build would adopt a
+ * cache merely because an encoder and a decoder file *existed*, which a
+ * download interrupted midway through the decoder also satisfies — recording
+ * the truncated length as if it were correct. Re-verifying those is cheap now
+ * that downloads resume and complete files are skipped.
+ */
+const MANIFEST_SOURCE = 'verified-download'
 
 export type ModelState = 'ready' | 'missing' | 'corrupt'
 
 interface Manifest {
+  source?: string
   files: Record<string, number>
 }
 
@@ -53,16 +61,23 @@ function readManifest(dir: string): Manifest | null {
 }
 
 /**
- * Record what a completed download produced. Call only once the pipeline has
- * loaded — that is the point at which we know every byte arrived and parsed.
+ * Record the sizes a verified download produced. `files` comes from
+ * ensureModelDownloaded, which took them from the server's Content-Length —
+ * never from whatever happens to be on disk, which is how a truncated file
+ * could previously certify itself.
  */
-export function writeManifest(cacheDir: string, modelId: string): void {
+export function writeManifest(
+  cacheDir: string,
+  modelId: string,
+  files: Record<string, number>
+): void {
   const dir = modelDir(cacheDir, modelId)
-  if (!existsSync(dir)) return
-  const files: Record<string, number> = {}
-  for (const rel of walk(dir)) files[rel.split('\\').join('/')] = statSync(join(dir, rel)).size
   mkdirSync(dir, { recursive: true })
-  writeFileSync(join(dir, MANIFEST), JSON.stringify({ files }, null, 2), 'utf8')
+  writeFileSync(
+    join(dir, MANIFEST),
+    JSON.stringify({ source: MANIFEST_SOURCE, files }, null, 2),
+    'utf8'
+  )
 }
 
 /**
@@ -75,27 +90,19 @@ export function checkModel(cacheDir: string, modelId: string): ModelState {
   const dir = modelDir(cacheDir, modelId)
   if (!existsSync(dir)) return 'missing'
 
-  const present = walk(dir).map((p) => p.split('\\').join('/'))
+  const present = walk(dir)
   if (present.length === 0) return 'missing'
 
+  // Anything without a manifest we wrote needs re-verifying against the server.
+  // 'corrupt' rather than 'missing' because there are bytes here worth resuming
+  // from: ensureModelDownloaded keeps every file whose length already matches.
   const manifest = readManifest(dir)
-  if (manifest) {
-    for (const [rel, size] of Object.entries(manifest.files)) {
-      const p = join(dir, rel)
-      if (!existsSync(p) || statSync(p).size !== size) return 'corrupt'
-    }
-    return 'ready'
-  }
+  if (!manifest || manifest.source !== MANIFEST_SOURCE) return 'corrupt'
 
-  // No manifest: a cache written by an older build. Adopt it if it at least
-  // looks complete — a truncated file still slips through here, but the load
-  // path purges and re-fetches on failure, so it self-heals on the next try
-  // instead of forcing everyone to re-download a working model.
-  const hasJson = REQUIRED_JSON.every((f) => present.includes(f))
-  const onnx = present.filter((p) => p.endsWith('.onnx'))
-  const hasWeights = onnx.some((p) => p.includes('encoder')) && onnx.some((p) => p.includes('decoder'))
-  if (!hasJson || !hasWeights) return 'corrupt'
-  writeManifest(cacheDir, modelId)
+  for (const [rel, size] of Object.entries(manifest.files)) {
+    const p = join(dir, rel)
+    if (!existsSync(p) || statSync(p).size !== size) return 'corrupt'
+  }
   return 'ready'
 }
 

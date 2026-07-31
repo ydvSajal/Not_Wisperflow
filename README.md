@@ -40,8 +40,46 @@ pnpm dev            # launches the app with hot reload
 First launch opens the onboarding wizard. Package an installer with:
 
 ```bash
-pnpm dist:win       # release/WhisprFlow-*.exe (NSIS)
+pnpm dist:win       # release/NotWhisperFlow-*-Setup.exe (NSIS)
 pnpm dist:mac       # dmg    |  pnpm dist:linux  # AppImage
+```
+
+## Installing on Windows: SmartScreen and Smart App Control
+
+The installer is **not code-signed** (signing certificates cost money; this is a
+free personal project). Windows therefore treats it as an unknown app, in one of
+two ways depending on your machine.
+
+**SmartScreen** — a blue "Windows protected your PC" dialog. Click **More info →
+Run anyway**. This is the common case and there is nothing else to do.
+
+**Smart App Control** — blocks the app outright with no "Run anyway" option. It
+only runs code that is signed by a known publisher or already trusted by
+Microsoft's reputation service, and it has no per-app allow list. It is on by
+default only on some clean installs of Windows 11.
+
+If Smart App Control is blocking it, you have two options:
+
+**Option 1 — run it without the installer (recommended).** Build it yourself with
+`pnpm dist:win` and run `release\win-unpacked\NotWhisperFlow.exe` directly. Copy
+that folder anywhere you like and make a shortcut to the `.exe`. Code you compiled
+on your own machine isn't subject to the same download-reputation checks, so
+nothing needs to be turned off.
+
+**Option 2 — turn Smart App Control off.** Windows Security → **App & browser
+control** → **Smart App Control settings** → **Off**.
+
+> ⚠️ **This is a one-way change.** Once Smart App Control is set to Off, Windows
+> will not let you turn it back on — re-enabling it requires a clean reinstall or
+> reset of Windows. It also switches that protection off for *every* program on
+> the machine, not just this one. Only do this if you understand and accept that
+> trade-off; otherwise use Option 1.
+
+Each release publishes the SHA-256 of its installer. Verify your download matches
+before running it:
+
+```powershell
+Get-FileHash .\NotWhisperFlow-*-Setup.exe -Algorithm SHA256
 ```
 
 ## 5-minute verification checklist

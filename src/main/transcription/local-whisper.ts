@@ -2,7 +2,7 @@ import { Worker } from 'node:worker_threads'
 import { join } from 'node:path'
 import { EventEmitter } from 'node:events'
 import type { TranscribeInput, TranscribeOutput, TranscriptionProvider } from './types'
-import { getModelCacheDir, expectedBytes } from './model-manager'
+import { getModelCacheDir } from './model-manager'
 
 type WorkerMessage =
   | { type: 'progress'; modelId: string; percent: number }
@@ -141,7 +141,7 @@ class LocalWhisper extends EventEmitter implements TranscriptionProvider {
           }
           this.loadingModelId = modelId
           this.loadWaiters.push({ resolve, reject })
-          worker.postMessage({ type: 'load', modelId, expectedBytes: expectedBytes(modelId) })
+          worker.postMessage({ type: 'load', modelId })
         })
     )
     return this.loadPromise

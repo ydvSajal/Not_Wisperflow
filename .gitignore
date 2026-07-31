@@ -8,3 +8,4 @@ release/
 *.tsbuildinfo
 .model-cache/
 .commandcode/
+STUDY-NOTES.md
