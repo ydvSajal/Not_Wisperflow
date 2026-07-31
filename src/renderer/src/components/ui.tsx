@@ -94,7 +94,9 @@ export function Toggle({
 }): React.JSX.Element {
   return (
     <label className="flex cursor-pointer items-center justify-between gap-4 py-1.5">
-      <span>
+      {/* min-w-0 lets the text column shrink; without it a long label keeps its
+          full width and pushes the switch past the edge of the card. */}
+      <span className="min-w-0">
         <span className="block text-sm text-ink">{label}</span>
         {description && <span className="block text-xs text-ink-dim">{description}</span>}
       </span>
@@ -106,13 +108,17 @@ export function Toggle({
         className={cx(
           'relative h-5 w-9 shrink-0 rounded-full transition-colors',
           'focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:outline-none',
-          checked ? 'bg-accent' : 'bg-surface-3 border border-line'
+          // An inset ring rather than a border: a border on one state only would
+          // inset that state's content box by 1px, so the knob and the track
+          // edges stopped lining up between on and off.
+          checked ? 'bg-accent' : 'bg-surface-3 ring-1 ring-line ring-inset'
         )}
       >
         <span
           className={cx(
-            'absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform',
-            checked ? 'translate-x-4' : 'translate-x-0.5'
+            'absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform',
+            // Track 36px - knob 16px - 2px inset each side = 16px of travel.
+            checked ? 'translate-x-4' : 'translate-x-0'
           )}
         />
       </button>

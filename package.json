@@ -1,7 +1,7 @@
 {
   "name": "notwhisprflow",
   "productName": "NotWhisperFlow",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Free personal dictation app: global hotkey, floating bar, Whisper transcription, auto-paste, history and stats.",
   "author": "Sajal Kumar",
   "license": "MIT",
