@@ -33,6 +33,7 @@ export const IPC = {
   modelsDownload: 'models:download',
 
   cloudTest: 'cloud:test',
+  sarvamTest: 'sarvam:test',
   cleanupTest: 'cleanup:test',
 
   appVersion: 'app:version',

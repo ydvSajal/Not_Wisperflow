@@ -56,7 +56,7 @@ export function NotesPage(): React.JSX.Element {
 
   return (
     <div className="flex h-full">
-      <div className="flex w-64 shrink-0 flex-col border-r border-white/5 bg-surface/50">
+      <div className="flex w-64 shrink-0 flex-col border-r border-line bg-surface-2">
         <div className="flex items-center gap-2 p-3">
           <div className="relative flex-1">
             <Search className="absolute top-2.5 left-2.5 h-3.5 w-3.5 text-ink-dim" />
@@ -112,7 +112,7 @@ export function NotesPage(): React.JSX.Element {
                 setTitle(e.target.value)
                 scheduleSave(e.target.value, body)
               }}
-              className="border-b border-white/5 bg-transparent px-6 py-4 text-lg font-semibold text-ink focus:outline-none"
+              className="border-b border-line bg-transparent px-6 py-4 text-lg font-semibold text-ink focus:outline-none"
               placeholder="Note title"
             />
             <textarea

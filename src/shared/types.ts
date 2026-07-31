@@ -7,6 +7,14 @@ export interface CloudConfig {
   model: string
 }
 
+export interface SarvamConfig {
+  apiKey: string
+  /** Sarvam speech-to-text model id, e.g. saarika:v2.5 */
+  model: string
+  /** BCP-47 code Sarvam expects (hi-IN, en-IN, ...) or 'unknown' to auto-detect */
+  languageCode: string
+}
+
 export interface CleanupConfig {
   enabled: boolean
   /** OpenAI-compatible chat completions base URL */
@@ -22,12 +30,13 @@ export interface AppSettings {
   translateHotkey: string
   /** ISO-639-1 target language for the translate hotkey */
   translateTarget: string
-  engine: 'local' | 'cloud'
+  engine: 'local' | 'cloud' | 'sarvam'
   /** HuggingFace ONNX model id for local whisper */
   localModel: string
   /** 'auto' or ISO-639-1 code ('en', 'hi', ...) */
   language: string
   cloud: CloudConfig
+  sarvam: SarvamConfig
   cleanup: CleanupConfig
   autoPaste: boolean
   restoreClipboard: boolean
@@ -47,6 +56,8 @@ export interface BarState {
   mode?: DictationMode
   /** Set when phase === 'result' */
   transcript?: string
+  /** Set when phase === 'result': false means it is on the clipboard only */
+  pasted?: boolean
   /** Set when phase === 'error' */
   error?: string
   /** ms timestamp when recording started; bar renders its own timer */

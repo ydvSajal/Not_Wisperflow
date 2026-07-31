@@ -45,6 +45,7 @@ export interface WhisprApi {
   downloadModel(modelId: string): Promise<void>
 
   testCloud(): Promise<{ ok: boolean; reason?: string }>
+  testSarvam(): Promise<{ ok: boolean; reason?: string }>
   testCleanup(): Promise<{ ok: boolean; reason?: string }>
 
   appVersion(): Promise<string>

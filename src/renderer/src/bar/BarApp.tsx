@@ -1,14 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AlertTriangle, Check, Loader2, Mic } from 'lucide-react'
+import { AlertTriangle, Check, ClipboardCopy } from 'lucide-react'
 import type { BarState } from '@shared/types'
 import { MicRecorder } from '@/lib/recorder'
 import { sounds } from '@/lib/sounds'
 import { formatTimer } from '@/lib/format'
 import { Waveform } from './Waveform'
 
-const LEVEL_BARS = 24
+const LEVEL_BARS = 14
 
-export function BarApp(): React.JSX.Element | null {
+/** Shared shell for every non-idle state: one dark capsule, one radius. */
+function Pill({ children }: { children: React.ReactNode }): React.JSX.Element {
+  return (
+    <div className="flex h-9 items-center gap-2.5 rounded-full bg-[#16161ef2] px-3.5 text-white shadow-lg shadow-black/30 ring-1 ring-white/12 backdrop-blur">
+      {children}
+    </div>
+  )
+}
+
+export function BarApp(): React.JSX.Element {
   const [state, setState] = useState<BarState>({ phase: 'idle' })
   const [levels, setLevels] = useState<number[]>(() => Array<number>(LEVEL_BARS).fill(0))
   const [elapsed, setElapsed] = useState(0)
@@ -54,7 +63,14 @@ export function BarApp(): React.JSX.Element | null {
       if (discard) {
         void recorder.discard()
       } else {
-        void recorder.stop().then(({ pcm, durationMs }) => window.api.sendAudio(pcm, durationMs))
+        void recorder
+          .stop()
+          .then(({ pcm, durationMs }) => window.api.sendAudio(pcm, durationMs))
+          .catch((err: unknown) =>
+            window.api.reportCaptureError(
+              `Could not finish recording: ${err instanceof Error ? err.message : String(err)}`
+            )
+          )
       }
     })
     return () => {
@@ -83,55 +99,68 @@ export function BarApp(): React.JSX.Element | null {
     return () => clearInterval(interval)
   }, [state.phase, state.startedAt])
 
-  if (state.phase === 'idle') return null
-
   return (
-    <div className="flex h-screen w-screen items-end justify-center pb-2">
-      <div className="flex min-h-[64px] w-[440px] items-center gap-3 rounded-2xl border border-white/10 bg-[#12121aee] px-4 py-3 shadow-2xl shadow-black/60 backdrop-blur">
-        {state.phase === 'recording' && (
-          <>
-            <span className="relative flex h-3 w-3 shrink-0">
-              <span className="animate-pulse-dot absolute inline-flex h-3 w-3 rounded-full bg-red-500" />
-            </span>
-            <Waveform levels={levels} />
-            <span className="w-10 shrink-0 text-right font-mono text-sm text-ink-dim">
-              {formatTimer(elapsed)}
-            </span>
-          </>
-        )}
-        {state.phase === 'transcribing' && (
-          <>
-            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-accent" />
-            <span className="text-sm text-ink-dim">
-              {state.mode === 'translate'
-                ? `Translating to ${translateTarget.toUpperCase()}…`
-                : 'Transcribing…'}
-            </span>
-          </>
-        )}
-        {state.phase === 'result' && (
-          <>
-            <Check className="h-4 w-4 shrink-0 text-emerald-400" />
-            <p className="line-clamp-2 text-sm leading-snug text-ink">{state.transcript}</p>
-          </>
-        )}
-        {state.phase === 'error' && (
-          <>
-            <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400" />
-            <p className="line-clamp-2 text-sm leading-snug text-amber-200">{state.error}</p>
-          </>
-        )}
-        {state.phase === 'recording' && (
-          <span className="ml-1 hidden shrink-0 items-center gap-1 text-[11px] text-ink-dim sm:flex">
-            {state.mode === 'translate' && (
-              <span className="rounded bg-accent/20 px-1.5 py-0.5 font-semibold text-accent-soft">
-                → {translateTarget.toUpperCase()}
+    <div className="flex h-screen w-screen items-end justify-center pb-1.5">
+      {state.phase === 'idle' ? (
+        // Resting state: a small capsule that marks where the pill will appear.
+        <span className="mb-1 h-[5px] w-11 rounded-full bg-[#16161e]/45 ring-1 ring-white/15" />
+      ) : (
+        <Pill>
+          {state.phase === 'recording' && (
+            <>
+              <span className="h-2 w-2 shrink-0 rounded-full bg-red-500" />
+              <Waveform levels={levels} />
+              <span className="tnum w-9 shrink-0 text-right text-xs text-white/70">
+                {formatTimer(elapsed)}
               </span>
-            )}
-            <Mic className="h-3 w-3" /> Esc cancels
-          </span>
-        )}
-      </div>
+              {state.mode === 'translate' && (
+                <span className="shrink-0 rounded-full bg-white/15 px-1.5 py-0.5 text-[10px] font-semibold">
+                  {translateTarget.toUpperCase()}
+                </span>
+              )}
+            </>
+          )}
+
+          {state.phase === 'transcribing' && (
+            <>
+              <span className="flex shrink-0 items-center gap-1">
+                {[0, 1, 2].map((i) => (
+                  <span
+                    key={i}
+                    className="animate-dot h-1.5 w-1.5 rounded-full bg-white"
+                    style={{ animationDelay: `${i * 160}ms` }}
+                  />
+                ))}
+              </span>
+              <span className="text-xs text-white/80">
+                {state.mode === 'translate'
+                  ? `Translating to ${translateTarget.toUpperCase()}`
+                  : 'Transcribing'}
+              </span>
+            </>
+          )}
+
+          {state.phase === 'result' && (
+            <>
+              {state.pasted ? (
+                <Check className="h-3.5 w-3.5 shrink-0 text-emerald-400" strokeWidth={2.5} />
+              ) : (
+                <ClipboardCopy className="h-3.5 w-3.5 shrink-0 text-amber-400" strokeWidth={2.25} />
+              )}
+              <span className="max-w-[240px] truncate text-xs text-white/85">
+                {state.pasted ? state.transcript : 'Copied. Paste it yourself.'}
+              </span>
+            </>
+          )}
+
+          {state.phase === 'error' && (
+            <>
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-400" strokeWidth={2.25} />
+              <span className="max-w-[260px] truncate text-xs text-amber-100">{state.error}</span>
+            </>
+          )}
+        </Pill>
+      )}
     </div>
   )
 }

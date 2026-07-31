@@ -6,6 +6,7 @@ import * as db from './db'
 import { listLocalModels } from './transcription/model-manager'
 import { localWhisper } from './transcription/local-whisper'
 import { testCloudConfig } from './transcription/cloud'
+import { testSarvamConfig } from './transcription/sarvam'
 import { testCleanupConfig } from './cleanup'
 import { createMainWindow } from './windows'
 import { importAudio, type DictationController } from './dictation'
@@ -80,6 +81,7 @@ export function registerIpc(dictation: DictationController, hotkeys: HotkeyManag
   })
 
   ipcMain.handle(IPC.cloudTest, () => testCloudConfig(settings.get().cloud))
+  ipcMain.handle(IPC.sarvamTest, () => testSarvamConfig(settings.get().sarvam))
   ipcMain.handle(IPC.cleanupTest, () => testCleanupConfig(settings.get().cleanup))
 
   ipcMain.handle(IPC.appVersion, () => app.getVersion())

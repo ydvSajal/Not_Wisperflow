@@ -109,7 +109,7 @@ export function Onboarding({
     step === 'hotkey'
 
   return (
-    <div className="flex h-screen items-center justify-center px-6">
+    <div className="flex h-screen items-center justify-center bg-canvas px-6">
       <div className="w-full max-w-xl">
         <div className="mb-6 flex items-center gap-2">
           <AudioLines className="h-6 w-6 text-accent" />

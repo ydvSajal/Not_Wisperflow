@@ -1,0 +1,11 @@
+# pnpm 11 no longer reads `pnpm.onlyBuiltDependencies` from package.json, so
+# this file is what allows these packages to run their install scripts. Without
+# it onnxruntime-node never builds its native binding and local transcription
+# fails on a clean clone.
+allowBuilds:
+  electron: true
+  electron-winstaller: true
+  esbuild: true
+  onnxruntime-node: true
+  protobufjs: true
+  sharp: true

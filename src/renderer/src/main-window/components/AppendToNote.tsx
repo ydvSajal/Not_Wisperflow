@@ -41,7 +41,7 @@ export function AppendToNote({ text }: { text: string }): React.JSX.Element {
         <NotebookPen className="h-3.5 w-3.5" />
       </button>
       {open && (
-        <div className="absolute right-0 bottom-full z-20 mb-1 w-52 rounded-lg border border-white/10 bg-surface-2 p-1 shadow-xl">
+        <div className="absolute right-0 bottom-full z-20 mb-1 w-52 rounded-lg border border-line bg-surface-2 p-1 shadow-xl">
           {notes.map((n) => (
             <button
               key={n.id}
@@ -53,7 +53,7 @@ export function AppendToNote({ text }: { text: string }): React.JSX.Element {
           ))}
           <button
             onClick={() => void appendToNew()}
-            className="block w-full rounded px-2.5 py-1.5 text-left text-xs text-accent-soft hover:bg-surface-3"
+            className="block w-full rounded px-2.5 py-1.5 text-left text-xs text-accent-strong hover:bg-surface-3"
           >
             + New note
           </button>

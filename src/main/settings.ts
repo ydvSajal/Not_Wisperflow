@@ -16,6 +16,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
     apiKey: '',
     model: 'whisper-large-v3-turbo'
   },
+  sarvam: {
+    apiKey: '',
+    model: 'saarika:v2.5',
+    languageCode: 'unknown'
+  },
   cleanup: {
     enabled: false,
     baseUrl: 'https://api.groq.com/openai/v1',
@@ -48,6 +53,7 @@ class SettingsStore extends EventEmitter {
       ...DEFAULT_SETTINGS,
       ...stored,
       cloud: { ...DEFAULT_SETTINGS.cloud, ...stored.cloud },
+      sarvam: { ...DEFAULT_SETTINGS.sarvam, ...stored.sarvam },
       cleanup: { ...DEFAULT_SETTINGS.cleanup, ...stored.cleanup }
     }
     return this.cache
@@ -59,6 +65,7 @@ class SettingsStore extends EventEmitter {
       ...prev,
       ...patch,
       cloud: { ...prev.cloud, ...patch.cloud },
+      sarvam: { ...prev.sarvam, ...patch.sarvam },
       cleanup: { ...prev.cleanup, ...patch.cleanup }
     }
     this.cache = next

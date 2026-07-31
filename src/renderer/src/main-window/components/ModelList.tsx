@@ -46,7 +46,7 @@ export function ModelList({
             className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${
               selected === m.id
                 ? 'border-accent bg-accent/10'
-                : 'border-white/5 bg-surface-2'
+                : 'border-line bg-surface-2'
             } ${m.downloaded ? 'cursor-pointer hover:border-accent/50' : ''}`}
           >
             <div className="min-w-0 flex-1">

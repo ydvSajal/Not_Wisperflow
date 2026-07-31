@@ -12,14 +12,15 @@ export function Button({
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant }): React.JSX.Element {
   const styles: Record<ButtonVariant, string> = {
-    primary: 'bg-accent text-white hover:bg-accent-soft disabled:bg-surface-3',
-    ghost: 'bg-surface-3 text-ink hover:bg-[#2c2c40] disabled:opacity-50',
-    danger: 'bg-red-600/80 text-white hover:bg-red-500 disabled:opacity-50'
+    primary: 'bg-accent text-white hover:bg-accent-strong disabled:bg-surface-3 disabled:text-ink-dim',
+    ghost: 'border border-line bg-surface text-ink hover:bg-surface-2 disabled:opacity-50',
+    danger: 'bg-red-600 text-white hover:bg-red-700 disabled:opacity-50'
   }
   return (
     <button
       className={cx(
-        'inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed',
+        'inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+        'active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100',
         styles[variant],
         className
       )}
@@ -40,7 +41,7 @@ export function Card({
   className?: string
 }): React.JSX.Element {
   return (
-    <section className={cx('rounded-xl border border-white/5 bg-surface p-5', className)}>
+    <section className={cx('rounded-2xl border border-line bg-surface p-5', className)}>
       {title && <h2 className="text-sm font-semibold text-ink">{title}</h2>}
       {subtitle && <p className="mt-0.5 text-xs text-ink-dim">{subtitle}</p>}
       <div className={title ? 'mt-4' : ''}>{children}</div>
@@ -55,7 +56,8 @@ export function Input({
   return (
     <input
       className={cx(
-        'w-full rounded-lg border border-white/10 bg-surface-2 px-3 py-1.5 text-sm text-ink placeholder:text-ink-dim/60 focus:border-accent focus:outline-none',
+        'w-full rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink',
+        'placeholder:text-ink-dim focus:border-accent focus:ring-2 focus:ring-accent/25 focus:outline-none',
         className
       )}
       {...props}
@@ -70,7 +72,8 @@ export function Select({
   return (
     <select
       className={cx(
-        'rounded-lg border border-white/10 bg-surface-2 px-3 py-1.5 text-sm text-ink focus:border-accent focus:outline-none',
+        'rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink',
+        'focus:border-accent focus:ring-2 focus:ring-accent/25 focus:outline-none',
         className
       )}
       {...props}
@@ -102,12 +105,13 @@ export function Toggle({
         onClick={() => onChange(!checked)}
         className={cx(
           'relative h-5 w-9 shrink-0 rounded-full transition-colors',
-          checked ? 'bg-accent' : 'bg-surface-3'
+          'focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:outline-none',
+          checked ? 'bg-accent' : 'bg-surface-3 border border-line'
         )}
       >
         <span
           className={cx(
-            'absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform',
+            'absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform',
             checked ? 'translate-x-4' : 'translate-x-0.5'
           )}
         />

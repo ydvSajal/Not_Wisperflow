@@ -5,12 +5,14 @@ import { transcribe } from './transcription'
 import { cleanupText, translateText } from './cleanup'
 import { applyReplacements, insertTranscription } from './db'
 import { pasteText } from './paste'
-import { getBarWindow, getMainWindow, hideBar, showBar } from './windows'
+import { getBarWindow, getMainWindow, showBar } from './windows'
 
 const RESULT_VISIBLE_MS = 2200
 const ERROR_VISIBLE_MS = 3200
 /** Safety cap so a forgotten recording cannot grow unbounded */
 const MAX_RECORDING_MS = 5 * 60 * 1000
+/** Second line of defence against key-repeat: ignore instant start->stop */
+const MIN_RECORDING_MS = 1000
 
 /**
  * The dictation state machine, driven by the global hotkey:
@@ -43,6 +45,9 @@ export class DictationController {
     if (this.phase === 'idle' || this.phase === 'result' || this.phase === 'error') {
       this.startRecording(mode)
     } else if (this.phase === 'recording') {
+      // A "stop" this soon after start is key-repeat, not the user. Keep
+      // recording; their real second press will land after this window.
+      if (Date.now() - this.startedAt < MIN_RECORDING_MS) return
       this.stopRecording()
     }
     // 'transcribing': ignore extra presses
@@ -81,13 +86,15 @@ export class DictationController {
   private toIdle(): void {
     this.clearTimers()
     this.phase = 'idle'
-    hideBar()
+    // The pill stays on screen; idle is a visual state, not a hidden window.
+    this.setBar({ phase: 'idle' })
   }
 
   /** Called by the bar renderer with the captured PCM once recording stops. */
   async onAudio(pcm: Float32Array, durationMs: number): Promise<void> {
     const session = this.session
     if (this.phase !== 'transcribing') return
+    console.info('[dictation] audio received', { samples: pcm.length, durationMs })
     const cfg = settings.get()
     try {
       const result = await transcribe({ pcm, language: cfg.language }, cfg)
@@ -115,10 +122,7 @@ export class DictationController {
         restoreClipboard: cfg.restoreClipboard
       })
       this.phase = 'result'
-      this.setBar({
-        phase: 'result',
-        transcript: pasted ? text : `${text}\n(copied to clipboard — paste manually)`
-      })
+      this.setBar({ phase: 'result', transcript: text, pasted })
       getMainWindow()?.webContents.send(EVT.dictationDone, { text, record })
       this.hideTimer = setTimeout(() => this.toIdle(), RESULT_VISIBLE_MS)
     } catch (err) {

@@ -1,4 +1,5 @@
 import { globalShortcut } from 'electron'
+import { ignoreKeyRepeat } from './key-repeat'
 
 /**
  * Owns global shortcut registrations. The main toggle comes from settings and
@@ -37,7 +38,7 @@ export class HotkeyManager {
     }
     if (!accelerator) return { ok: true }
     try {
-      const ok = globalShortcut.register(accelerator, handler)
+      const ok = globalShortcut.register(accelerator, ignoreKeyRepeat(handler))
       if (!ok) return { ok: false, reason: 'Shortcut is already in use by another app' }
       this[slot] = accelerator
       return { ok: true }

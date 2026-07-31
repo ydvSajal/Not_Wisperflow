@@ -88,10 +88,11 @@ function drawIcon(size, { background }) {
       if (background && !inRoundedSquare(x, y)) continue // transparent
       let r, g, b, a
       if (background) {
+        // Matches --c-accent (#6d4aff) shading to a deeper violet.
         const t = y / 256
-        r = Math.round(lerp(0x8b, 0x5b, t))
-        g = Math.round(lerp(0x5c, 0x21, t))
-        b = Math.round(lerp(0xf6, 0xb6, t))
+        r = Math.round(lerp(0x6d, 0x45, t))
+        g = Math.round(lerp(0x4a, 0x27, t))
+        b = Math.round(lerp(0xff, 0xc4, t))
         a = 255
       } else {
         r = g = b = 0

@@ -26,6 +26,7 @@ export function SettingsPage({
 }): React.JSX.Element {
   const toast = useToast()
   const [testingCloud, setTestingCloud] = useState(false)
+  const [testingSarvam, setTestingSarvam] = useState(false)
   const [testingCleanup, setTestingCleanup] = useState(false)
 
   const save = (patch: Partial<AppSettings>): void => {
@@ -42,6 +43,16 @@ export function SettingsPage({
     )
   }
 
+  const testSarvam = async (): Promise<void> => {
+    setTestingSarvam(true)
+    const result = await window.api.testSarvam()
+    setTestingSarvam(false)
+    toast(
+      result.ok ? 'Sarvam connection works' : `Sarvam test failed: ${result.reason}`,
+      result.ok ? 'success' : 'error'
+    )
+  }
+
   const testCleanup = async (): Promise<void> => {
     setTestingCleanup(true)
     const result = await window.api.testCleanup()
@@ -53,8 +64,8 @@ export function SettingsPage({
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5 px-8 py-8">
-      <h1 className="text-lg font-semibold">Settings</h1>
+    <div className="max-w-3xl space-y-5 px-7 py-6">
+      <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
 
       <Card title="Shortcuts" subtitle="Press anywhere to start/stop dictation. Esc cancels a recording.">
         <Field label="Dictate">
@@ -95,28 +106,36 @@ export function SettingsPage({
       </Card>
 
       <Card title="Transcription engine">
-        <div className="mb-4 flex gap-2">
-          {(['local', 'cloud'] as const).map((engine) => (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {(
+            [
+              ['local', 'Local (offline, free)'],
+              ['cloud', 'Cloud (API key)'],
+              ['sarvam', 'Sarvam AI']
+            ] as const
+          ).map(([engine, label]) => (
             <button
               key={engine}
               onClick={() => save({ engine })}
-              className={`rounded-lg px-4 py-2 text-sm capitalize transition-colors ${
+              className={`rounded-lg px-4 py-2 text-sm transition-colors ${
                 settings.engine === engine
                   ? 'bg-accent text-white'
                   : 'bg-surface-2 text-ink-dim hover:text-ink'
               }`}
             >
-              {engine === 'local' ? 'Local (offline, free)' : 'Cloud (API key)'}
+              {label}
             </button>
           ))}
         </div>
 
-        {settings.engine === 'local' ? (
+        {settings.engine === 'local' && (
           <ModelList
             selected={settings.localModel}
             onSelect={(localModel) => save({ localModel })}
           />
-        ) : (
+        )}
+
+        {settings.engine === 'cloud' && (
           <div className="space-y-3">
             <Field label="Base URL (any OpenAI-compatible endpoint)">
               <Input
@@ -140,6 +159,35 @@ export function SettingsPage({
             </Field>
             <Button variant="ghost" onClick={() => void testCloud()} disabled={testingCloud}>
               {testingCloud ? 'Testing…' : 'Test connection'}
+            </Button>
+          </div>
+        )}
+
+        {settings.engine === 'sarvam' && (
+          <div className="space-y-3">
+            <Field label="Model">
+              <Input
+                value={settings.sarvam.model}
+                onChange={(e) => save({ sarvam: { ...settings.sarvam, model: e.target.value } })}
+              />
+            </Field>
+            <Field label="Language code (BCP-47, e.g. hi-IN, en-IN — or 'unknown' to auto-detect)">
+              <Input
+                value={settings.sarvam.languageCode}
+                onChange={(e) =>
+                  save({ sarvam: { ...settings.sarvam, languageCode: e.target.value } })
+                }
+              />
+            </Field>
+            <Field label="API key (dashboard.sarvam.ai)">
+              <Input
+                type="password"
+                value={settings.sarvam.apiKey}
+                onChange={(e) => save({ sarvam: { ...settings.sarvam, apiKey: e.target.value } })}
+              />
+            </Field>
+            <Button variant="ghost" onClick={() => void testSarvam()} disabled={testingSarvam}>
+              {testingSarvam ? 'Testing…' : 'Test connection'}
             </Button>
           </div>
         )}

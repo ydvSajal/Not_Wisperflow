@@ -6,9 +6,6 @@
   "license": "MIT",
   "private": true,
   "type": "module",
-  "pnpm": {
-    "onlyBuiltDependencies": ["electron", "electron-winstaller", "esbuild", "sharp"]
-  },
   "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
@@ -18,6 +15,8 @@
     "lint": "eslint .",
     "gen:icons": "node scripts/gen-icons.mjs",
     "test:whisper": "node scripts/test-whisper.mjs",
+    "test:resample": "node --experimental-strip-types scripts/test-resample.mjs",
+    "test:hotkey": "node --experimental-strip-types scripts/test-key-repeat.mjs",
     "dist:win": "electron-vite build && electron-builder --win",
     "dist:mac": "electron-vite build && electron-builder --mac",
     "dist:linux": "electron-vite build && electron-builder --linux"

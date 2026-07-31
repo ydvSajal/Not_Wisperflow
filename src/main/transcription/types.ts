@@ -7,7 +7,7 @@ export interface TranscribeInput {
 
 export interface TranscribeOutput {
   text: string
-  engine: 'local' | 'cloud'
+  engine: 'local' | 'cloud' | 'sarvam'
   model: string
 }
 

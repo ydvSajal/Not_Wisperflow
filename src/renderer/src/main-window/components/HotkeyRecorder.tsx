@@ -68,8 +68,8 @@ export function HotkeyRecorder({
       onClick={() => setCapturing((c) => !c)}
       className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm transition-colors ${
         capturing
-          ? 'border-accent bg-accent/10 text-accent-soft'
-          : 'border-white/10 bg-surface-2 text-ink hover:border-white/20'
+          ? 'border-accent bg-accent/10 text-accent-strong'
+          : 'border-line bg-surface-2 text-ink hover:border-ink-dim'
       }`}
     >
       <Keyboard className="h-4 w-4" />

@@ -3,7 +3,12 @@ import { execFile } from 'node:child_process'
 
 function exec(cmd: string, args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
-    execFile(cmd, args, { timeout: 5000 }, (err) => (err ? reject(err) : resolve()))
+    // windowsHide is essential: without it, spawning a console app from a GUI
+    // process pops a console window that takes the foreground, so SendKeys ^v
+    // pastes into that console instead of the app the user was dictating into.
+    execFile(cmd, args, { timeout: 5000, windowsHide: true }, (err) =>
+      err ? reject(err) : resolve()
+    )
   })
 }
 

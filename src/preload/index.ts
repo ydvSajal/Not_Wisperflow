@@ -46,6 +46,7 @@ const api: WhisprApi = {
   downloadModel: (modelId) => ipcRenderer.invoke(IPC.modelsDownload, modelId),
 
   testCloud: () => ipcRenderer.invoke(IPC.cloudTest),
+  testSarvam: () => ipcRenderer.invoke(IPC.sarvamTest),
   testCleanup: () => ipcRenderer.invoke(IPC.cleanupTest),
 
   appVersion: () => ipcRenderer.invoke(IPC.appVersion),

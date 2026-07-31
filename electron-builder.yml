@@ -1,5 +1,6 @@
 appId: com.sajal.whisprflow
 productName: WhisprFlow
+copyright: Copyright (c) 2026 Sajal Kumar
 directories:
   output: release
   buildResources: build
@@ -7,6 +8,11 @@ files:
   - out/**
   - resources/**
   - package.json
+  # onnxruntime-node ships prebuilt bindings for six platforms (~208 MB) and
+  # loads exactly one at runtime: bin/napi-v3/<platform>/<arch>. Drop the rest.
+  - '!node_modules/onnxruntime-node/bin/napi-v3/darwin'
+  - '!node_modules/onnxruntime-node/bin/napi-v3/linux'
+  - '!node_modules/onnxruntime-node/bin/napi-v3/win32/arm64'
 # Personal app: skip asar so worker threads and ONNX runtime resolve modules
 # from a plain directory with zero path tricks.
 asar: false
@@ -14,10 +20,21 @@ asar: false
 npmRebuild: false
 win:
   target: nsis
+  # electron-builder converts this 256x256 PNG into the multi-size .ico that
+  # Windows uses for the exe, Start menu, taskbar and Add/Remove Programs.
   icon: build/icon.png
+  artifactName: ${productName}-${version}-Setup.${ext}
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+  # Per-user install: lands in %LOCALAPPDATA%, so no admin prompt is needed.
+  perMachine: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: WhisprFlow
+  uninstallDisplayName: WhisprFlow ${version}
+  # Launch straight after installing so the tray icon and hotkey are live.
+  runAfterFinish: true
 mac:
   target: dmg
   icon: build/icon.png

@@ -15,13 +15,46 @@ import { Onboarding } from './pages/Onboarding'
 import { prettyHotkey } from '@/lib/format'
 
 type Page = 'history' | 'notes' | 'stats' | 'settings'
+type NavItem = { id: Page; label: string; icon: typeof HistoryIcon }
 
-const NAV: { id: Page; label: string; icon: typeof HistoryIcon }[] = [
-  { id: 'history', label: 'History', icon: HistoryIcon },
+const NAV: NavItem[] = [
+  { id: 'history', label: 'Dictation', icon: HistoryIcon },
   { id: 'notes', label: 'Notes', icon: NotebookPen },
-  { id: 'stats', label: 'Stats', icon: BarChart3 },
-  { id: 'settings', label: 'Settings', icon: SettingsIcon }
+  { id: 'stats', label: 'Insights', icon: BarChart3 }
 ]
+const NAV_FOOTER: NavItem[] = [{ id: 'settings', label: 'Settings', icon: SettingsIcon }]
+
+const ENGINE_LABEL: Record<AppSettings['engine'], string> = {
+  local: 'On-device',
+  cloud: 'Cloud',
+  sarvam: 'Sarvam'
+}
+
+function NavButton({
+  item,
+  active,
+  onClick
+}: {
+  item: NavItem
+  active: boolean
+  onClick: () => void
+}): React.JSX.Element {
+  const { label, icon: Icon } = item
+  return (
+    <button
+      onClick={onClick}
+      aria-current={active ? 'page' : undefined}
+      className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
+        active
+          ? 'border border-line bg-surface font-medium text-ink shadow-sm'
+          : 'border border-transparent text-ink-dim hover:bg-surface/70 hover:text-ink'
+      }`}
+    >
+      <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+      {label}
+    </button>
+  )
+}
 
 export function App(): React.JSX.Element | null {
   const [page, setPage] = useState<Page>('history')
@@ -41,38 +74,51 @@ export function App(): React.JSX.Element | null {
   }
 
   return (
-    <div className="flex h-screen">
-      <aside className="flex w-52 shrink-0 flex-col border-r border-white/5 bg-surface">
-        <div className="flex items-center gap-2 px-5 py-5">
-          <AudioLines className="h-5 w-5 text-accent" />
-          <span className="text-base font-semibold tracking-tight">WhisprFlow</span>
+    <div className="flex h-screen bg-canvas">
+      {/* pt-11 clears the 40px native titlebar overlay drawn over the page */}
+      <aside className="flex w-56 shrink-0 flex-col gap-1 px-3 pt-11 pb-4">
+        <div className="flex items-center gap-2 px-2 py-3">
+          <AudioLines className="h-5 w-5 text-accent" strokeWidth={2} />
+          <span className="text-[15px] font-semibold tracking-tight">WhisprFlow</span>
+          <span className="ml-auto rounded-full bg-accent-wash px-2 py-0.5 text-[11px] font-medium text-accent-strong">
+            {ENGINE_LABEL[settings.engine]}
+          </span>
         </div>
-        <nav className="flex flex-col gap-1 px-3">
-          {NAV.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => setPage(id)}
-              className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
-                page === id ? 'bg-accent/15 text-accent-soft' : 'text-ink-dim hover:bg-surface-2'
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </button>
+        <nav className="flex flex-col gap-1">
+          {NAV.map((item) => (
+            <NavButton
+              key={item.id}
+              item={item}
+              active={page === item.id}
+              onClick={() => setPage(item.id)}
+            />
           ))}
         </nav>
-        <div className="mt-auto space-y-1 px-5 py-4 text-[11px] text-ink-dim">
+        <nav className="mt-auto flex flex-col gap-1">
+          {NAV_FOOTER.map((item) => (
+            <NavButton
+              key={item.id}
+              item={item}
+              active={page === item.id}
+              onClick={() => setPage(item.id)}
+            />
+          ))}
+        </nav>
+        <div className="space-y-1 px-3 pt-3 text-[11px] text-ink-dim">
           <p>
-            Dictate anywhere: <span className="text-ink">{prettyHotkey(settings.hotkey)}</span>
+            Dictate anywhere with{' '}
+            <span className="font-medium text-ink">{prettyHotkey(settings.hotkey)}</span>
           </p>
-          <p>v{version}</p>
+          <p className="tnum">v{version}</p>
         </div>
       </aside>
-      <main className="flex-1 overflow-y-auto">
-        {page === 'history' && <HistoryPage />}
-        {page === 'notes' && <NotesPage />}
-        {page === 'stats' && <StatsPage />}
-        {page === 'settings' && <SettingsPage settings={settings} onChange={setSettings} />}
+      <main className="min-w-0 flex-1 pt-11 pr-2 pb-2">
+        <div className="h-full overflow-y-auto rounded-2xl border border-line bg-surface">
+          {page === 'history' && <HistoryPage />}
+          {page === 'notes' && <NotesPage />}
+          {page === 'stats' && <StatsPage />}
+          {page === 'settings' && <SettingsPage settings={settings} onChange={setSettings} />}
+        </div>
       </main>
     </div>
   )

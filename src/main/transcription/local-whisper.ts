@@ -19,6 +19,8 @@ class LocalWhisper extends EventEmitter implements TranscriptionProvider {
   private worker: Worker | null = null
   private nextId = 1
   private modelId = ''
+  private loadingModelId = ''
+  private loadedModelId = ''
   private loadPromise: Promise<void> | null = null
   private pending = new Map<
     number,
@@ -27,10 +29,7 @@ class LocalWhisper extends EventEmitter implements TranscriptionProvider {
   private loadWaiters: { resolve: () => void; reject: (err: Error) => void }[] = []
 
   setModel(modelId: string): void {
-    if (modelId !== this.modelId) {
-      this.modelId = modelId
-      this.loadPromise = null
-    }
+    this.modelId = modelId
   }
 
   private ensureWorker(): Worker {
@@ -56,10 +55,15 @@ class LocalWhisper extends EventEmitter implements TranscriptionProvider {
         this.emit('progress', { modelId: msg.modelId, percent: msg.percent })
         break
       case 'loaded':
+        if (msg.modelId !== this.loadingModelId) break
+        this.loadingModelId = ''
+        this.loadedModelId = msg.modelId
         for (const w of this.loadWaiters) w.resolve()
         this.loadWaiters = []
         break
       case 'load-error': {
+        if (msg.modelId !== this.loadingModelId) break
+        this.loadingModelId = ''
         const err = new Error(msg.message)
         for (const w of this.loadWaiters) w.reject(err)
         this.loadWaiters = []
@@ -77,15 +81,31 @@ class LocalWhisper extends EventEmitter implements TranscriptionProvider {
     }
   }
 
-  /** Loads (downloading if needed) the current model. Idempotent per model. */
+  /**
+   * Loads (downloading if needed) the current model. Idempotent per model;
+   * queued (not raced) behind any load already in flight for another model,
+   * since the worker only holds one pipeline/progress state at a time.
+   */
   load(): Promise<void> {
     if (!this.modelId) return Promise.reject(new Error('No local model configured'))
-    if (this.loadPromise) return this.loadPromise
+    const modelId = this.modelId
+    if (this.loadingModelId === modelId && this.loadPromise) return this.loadPromise
+    // Already resolved for this model and nothing else queued: genuinely a no-op.
+    if (this.loadedModelId === modelId && !this.loadingModelId) return Promise.resolve()
     const worker = this.ensureWorker()
-    this.loadPromise = new Promise<void>((resolve, reject) => {
-      this.loadWaiters.push({ resolve, reject })
-      worker.postMessage({ type: 'load', modelId: this.modelId })
-    })
+    const prior = this.loadPromise ?? Promise.resolve()
+    this.loadPromise = prior.catch(() => undefined).then(
+      () =>
+        new Promise<void>((resolve, reject) => {
+          if (this.modelId !== modelId) {
+            resolve() // superseded while queued
+            return
+          }
+          this.loadingModelId = modelId
+          this.loadWaiters.push({ resolve, reject })
+          worker.postMessage({ type: 'load', modelId })
+        })
+    )
     return this.loadPromise
   }
 
@@ -95,8 +115,11 @@ class LocalWhisper extends EventEmitter implements TranscriptionProvider {
     const id = this.nextId++
     const text = await new Promise<string>((resolve, reject) => {
       this.pending.set(id, { resolve, reject })
-      worker.postMessage({ type: 'transcribe', id, pcm: input.pcm, language: input.language }, [
-        input.pcm.buffer as ArrayBuffer
+      // Transfer a copy: transferring input.pcm.buffer detaches the caller's
+      // array, so any retry or second consumer would see an empty clip.
+      const pcm = input.pcm.slice()
+      worker.postMessage({ type: 'transcribe', id, pcm, language: input.language }, [
+        pcm.buffer as ArrayBuffer
       ])
     })
     return { text, engine: 'local', model: this.modelId }
