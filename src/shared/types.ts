@@ -105,6 +105,12 @@ export interface LocalModelInfo {
   /** Approximate download size, display only */
   size: string
   downloaded: boolean
+  /**
+   * 'corrupt' means files are present but incomplete — an interrupted download.
+   * Kept distinct from 'missing' so the UI can offer a repair instead of
+   * showing the model as ready and then failing at transcription time.
+   */
+  state: 'ready' | 'missing' | 'corrupt'
 }
 
 export interface ModelDownloadProgress {

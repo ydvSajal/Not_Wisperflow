@@ -3,7 +3,7 @@ import type { TranscribeInput, TranscribeOutput } from './types'
 import { localWhisper } from './local-whisper'
 import { CloudTranscriber } from './cloud'
 import { SarvamTranscriber } from './sarvam'
-import { isModelDownloaded } from './model-manager'
+import { modelState } from './model-manager'
 
 /** Anything shorter than this cannot hold a word. */
 const MIN_SAMPLES = 16000 * 0.3
@@ -40,9 +40,22 @@ export async function transcribe(
   if (settings.engine === 'sarvam') {
     return new SarvamTranscriber(settings.sarvam).transcribe(input)
   }
-  if (!isModelDownloaded(settings.localModel)) {
+  // A download in flight would otherwise queue this transcription behind it and
+  // look like a hang for as long as the download takes.
+  if (localWhisper.isLoading) {
+    const which = localWhisper.downloadingModelId.split('/').pop()
+    throw new Error(`Still downloading ${which}. Try again once it finishes.`)
+  }
+  const state = modelState(settings.localModel)
+  if (state === 'missing') {
     throw new Error(
       'Local model not downloaded yet. Open Settings → Engine and download it first.'
+    )
+  }
+  if (state === 'corrupt') {
+    throw new Error(
+      'The local model files are incomplete — a download was interrupted. ' +
+        'Open Settings → Engine and download it again.'
     )
   }
   localWhisper.setModel(settings.localModel)

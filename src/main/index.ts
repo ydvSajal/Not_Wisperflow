@@ -1,6 +1,7 @@
-import { app, session } from 'electron'
+import { app, session, BrowserWindow } from 'electron'
 import { settings } from './settings'
-import { createBarWindow, createMainWindow } from './windows'
+import { localWhisper } from './transcription/local-whisper'
+import { createBarWindow, createMainWindow, markQuitting } from './windows'
 import { createTray } from './tray'
 import { HotkeyManager } from './hotkeys'
 import { DictationController } from './dictation'
@@ -46,6 +47,15 @@ if (!gotLock) {
 
   // Tray app: closing all windows must not quit
   app.on('window-all-closed', () => undefined)
+
+  // Quit used to hang: the bar window is created with closable:false so a
+  // normal close() never lands on it, and a whisper worker mid-inference keeps
+  // the process alive on its own. Tear both down explicitly.
+  app.on('before-quit', () => {
+    markQuitting()
+    void localWhisper.dispose()
+    for (const win of BrowserWindow.getAllWindows()) win.destroy()
+  })
 
   app.on('will-quit', () => hotkeys.dispose())
 }

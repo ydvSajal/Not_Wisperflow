@@ -273,6 +273,17 @@ export function SettingsPage({
           onChange={(launchAtLogin) => save({ launchAtLogin })}
           label="Launch at login"
         />
+        {/* Uninstalling leaves settings.json in %APPDATA%, so a reinstall walks
+            straight past first-run setup. This is the way back to it. */}
+        <div className="flex items-center justify-between pt-2">
+          <div>
+            <p className="text-sm text-ink">Run setup again</p>
+            <p className="text-xs text-ink-dim">Redo the mic check, model download and shortcut</p>
+          </div>
+          <Button variant="ghost" onClick={() => save({ onboarded: false })}>
+            Start setup
+          </Button>
+        </div>
       </Card>
     </div>
   )

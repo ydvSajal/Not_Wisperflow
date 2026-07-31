@@ -13,6 +13,16 @@ files:
   - '!node_modules/onnxruntime-node/bin/napi-v3/darwin'
   - '!node_modules/onnxruntime-node/bin/napi-v3/linux'
   - '!node_modules/onnxruntime-node/bin/napi-v3/win32/arm64'
+  # transformers pulls in onnxruntime-web (89 MB) for its browser backend. We
+  # only ever run the node build, which webpack marks that import as "(ignored)"
+  # in — verify with: grep -n 'onnxruntime-web (ignored)' on transformers.node.mjs
+  # before assuming this is still safe after a dependency bump.
+  - '!node_modules/onnxruntime-web'
+  # Same story for the WASM execution provider shipped inside transformers/dist.
+  - '!node_modules/@huggingface/transformers/dist/*.wasm'
+  - '!node_modules/@huggingface/transformers/dist/*.min.js'
+  - '!node_modules/@huggingface/transformers/dist/transformers.web*'
+  - '!node_modules/**/*.map'
 # Personal app: skip asar so worker threads and ONNX runtime resolve modules
 # from a plain directory with zero path tricks.
 asar: false

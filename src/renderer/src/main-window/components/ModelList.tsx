@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, Download, Loader2 } from 'lucide-react'
+import { AlertTriangle, Check, Download, Loader2 } from 'lucide-react'
 import type { LocalModelInfo, ModelDownloadProgress } from '@shared/types'
 import { Button } from '@/components/ui'
 import { useToast } from '@/components/Toast'
@@ -55,6 +55,11 @@ export function ModelList({
                 {m.size}
                 {selected === m.id && ' · active'}
               </p>
+              {m.state === 'corrupt' && !downloading && (
+                <p className="mt-1 text-xs text-amber-300">
+                  Incomplete download — re-download to repair.
+                </p>
+              )}
               {downloading && (
                 <div className="mt-2 h-1.5 w-full overflow-hidden rounded bg-surface-3">
                   <div
@@ -72,7 +77,15 @@ export function ModelList({
               </span>
             ) : (
               <Button variant="ghost" onClick={() => download(m.id)}>
-                <Download className="h-3.5 w-3.5" /> Download
+                {m.state === 'corrupt' ? (
+                  <>
+                    <AlertTriangle className="h-3.5 w-3.5" /> Repair
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-3.5 w-3.5" /> Download
+                  </>
+                )}
               </Button>
             )}
           </li>

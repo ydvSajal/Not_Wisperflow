@@ -1,7 +1,7 @@
 {
   "name": "notwhisprflow",
   "productName": "NotWhisperFlow",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Free personal dictation app: global hotkey, floating bar, Whisper transcription, auto-paste, history and stats.",
   "author": "Sajal Kumar",
   "license": "MIT",
@@ -17,6 +17,7 @@
     "gen:icons": "node scripts/gen-icons.mjs",
     "test:whisper": "node scripts/test-whisper.mjs",
     "test:resample": "node --experimental-strip-types scripts/test-resample.mjs",
+    "test:model-cache": "node --experimental-strip-types scripts/test-model-cache.mjs",
     "test:hotkey": "node --experimental-strip-types scripts/test-key-repeat.mjs",
     "dist:win": "electron-vite build && electron-builder --win",
     "dist:mac": "electron-vite build && electron-builder --mac",
