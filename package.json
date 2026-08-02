@@ -5,6 +5,14 @@
   "description": "Free personal dictation app: global hotkey, floating bar, Whisper transcription, auto-paste, history and stats.",
   "author": "Sajal Kumar",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ydvSajal/Not_Wisperflow.git"
+  },
+  "homepage": "https://github.com/ydvSajal/Not_Wisperflow#readme",
+  "bugs": {
+    "url": "https://github.com/ydvSajal/Not_Wisperflow/issues"
+  },
   "private": true,
   "type": "module",
   "main": "out/main/index.js",
