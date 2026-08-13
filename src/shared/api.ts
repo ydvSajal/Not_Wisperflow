@@ -21,6 +21,8 @@ export interface WhisprApi {
   cancelDictation(): Promise<void>
   /** Bar window only: deliver captured PCM (16kHz mono) and its duration */
   sendAudio(pcm: Float32Array, durationMs: number): Promise<void>
+  /** Bar window only: deliver partial captured PCM during recording */
+  sendAudioChunk(pcm: Float32Array, durationMs: number): Promise<void>
   reportCaptureError(message: string): Promise<void>
 
   /** Transcribe an imported audio file into history (no paste) */

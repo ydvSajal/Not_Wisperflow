@@ -25,6 +25,11 @@ export class DictationController {
   private session = 0
   private hideTimer: NodeJS.Timeout | null = null
   private maxTimer: NodeJS.Timeout | null = null
+  private accumulatedText = ''
+  private chunkChain: Promise<void> = Promise.resolve()
+  private totalDurationMs = 0
+  private lastEngine = ''
+  private lastModel = ''
 
   constructor(
     private hooks: { onRecordingStart: () => void; onRecordingEnd: () => void }
@@ -59,6 +64,11 @@ export class DictationController {
     this.phase = 'recording'
     this.mode = mode
     this.startedAt = Date.now()
+    this.accumulatedText = ''
+    this.chunkChain = Promise.resolve()
+    this.totalDurationMs = 0
+    this.lastEngine = ''
+    this.lastModel = ''
     showBar()
     this.setBar({ phase: 'recording', mode, startedAt: this.startedAt })
     getBarWindow()?.webContents.send(EVT.captureStart)
@@ -90,16 +100,55 @@ export class DictationController {
     this.setBar({ phase: 'idle' })
   }
 
+  /** Called periodically by the bar renderer with partial PCM. */
+  async onAudioChunk(pcm: Float32Array, durationMs: number): Promise<void> {
+    const session = this.session
+    if (this.phase !== 'recording') return
+    this.totalDurationMs += durationMs
+    const cfg = settings.get()
+
+    this.chunkChain = this.chunkChain.then(async () => {
+      if (session !== this.session) return
+      try {
+        const result = await transcribe({ pcm, language: cfg.language }, cfg)
+        if (session !== this.session) return
+        if (result.text) {
+          this.accumulatedText += (this.accumulatedText ? ' ' : '') + result.text.trim()
+        }
+        this.lastEngine = result.engine
+        this.lastModel = result.model
+      } catch (err) {
+        console.error('[dictation] Chunk transcription error:', err)
+      }
+    })
+  }
+
   /** Called by the bar renderer with the captured PCM once recording stops. */
   async onAudio(pcm: Float32Array, durationMs: number): Promise<void> {
     const session = this.session
     if (this.phase !== 'transcribing') return
-    console.info('[dictation] audio received', { samples: pcm.length, durationMs })
+    console.info('[dictation] final audio received', { samples: pcm.length, durationMs })
+    this.totalDurationMs += durationMs
     const cfg = settings.get()
+    
     try {
-      const result = await transcribe({ pcm, language: cfg.language }, cfg)
-      if (session !== this.session) return // cancelled while transcribing
-      const raw = result.text
+      // Wait for any pending partial chunks to finish transcribing
+      await this.chunkChain
+      if (session !== this.session) return
+
+      let finalRaw = ''
+      if (pcm.length > 0) {
+        const result = await transcribe({ pcm, language: cfg.language }, cfg)
+        if (session !== this.session) return
+        if (result.text) {
+          finalRaw = result.text.trim()
+        }
+        this.lastEngine = result.engine
+        this.lastModel = result.model
+      }
+
+      const raw = (this.accumulatedText + (this.accumulatedText && finalRaw ? ' ' : '') + finalRaw).trim()
+      
       if (!raw) {
         this.showError('No speech detected')
         return
@@ -113,9 +162,9 @@ export class DictationController {
       const record = insertTranscription({
         text,
         rawText: raw,
-        durationMs,
-        engine: result.engine,
-        model: result.model
+        durationMs: this.totalDurationMs,
+        engine: this.lastEngine || 'local',
+        model: this.lastModel || 'unknown'
       })
       const pasted = await pasteText(text, {
         autoPaste: cfg.autoPaste,

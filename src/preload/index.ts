@@ -23,6 +23,7 @@ const api: WhisprApi = {
   toggleDictation: () => ipcRenderer.invoke(IPC.dictationToggle),
   cancelDictation: () => ipcRenderer.invoke(IPC.dictationCancel),
   sendAudio: (pcm, durationMs) => ipcRenderer.invoke(IPC.dictationAudio, pcm, durationMs),
+  sendAudioChunk: (pcm, durationMs) => ipcRenderer.invoke(IPC.dictationAudioChunk, pcm, durationMs),
   reportCaptureError: (message) => ipcRenderer.invoke(IPC.dictationCaptureError, message),
 
   importAudio: (pcm, durationMs) => ipcRenderer.invoke(IPC.importAudio, pcm, durationMs),

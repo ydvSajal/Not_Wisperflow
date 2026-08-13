@@ -34,6 +34,9 @@ export function registerIpc(dictation: DictationController, hotkeys: HotkeyManag
     // Structured clone hands us back a Float32Array view over a fresh buffer
     void dictation.onAudio(pcm, durationMs)
   })
+  ipcMain.handle(IPC.dictationAudioChunk, (_e, pcm: Float32Array, durationMs: number) => {
+    void dictation.onAudioChunk(pcm, durationMs)
+  })
   ipcMain.handle(IPC.dictationCaptureError, (_e, message: string) =>
     dictation.onCaptureError(message)
   )

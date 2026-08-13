@@ -45,7 +45,12 @@ export function BarApp(): React.JSX.Element {
       const recorder = new MicRecorder()
       recorderRef.current = recorder
       if (soundsEnabled.current) sounds.start()
-      recorder.start(onLevel).catch((err: unknown) => {
+      recorder.start(
+        onLevel,
+        (pcm: Float32Array, durationMs: number) => {
+          void window.api.sendAudioChunk(pcm, durationMs)
+        }
+      ).catch((err: unknown) => {
         recorderRef.current = null
         const message =
           err instanceof DOMException && err.name === 'NotAllowedError'

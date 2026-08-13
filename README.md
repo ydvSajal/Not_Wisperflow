@@ -98,20 +98,28 @@ anyway**. This is the common case and there is nothing else to do.
 code signed by a known publisher or already trusted by Microsoft's reputation service, and
 it has no per-app allow list. It is on by default only on some clean installs of Windows 11.
 
-If Smart App Control is blocking it, you have two options:
+If Smart App Control is blocking it, you have three options:
 
-**Option 1 — run it without the installer (recommended).** Build it yourself with
+**Option 1 — Allow the blocked app via Protection History.** 
+When the block pop-up appears, select the app or file causing the blockage and click **Learn more** to allow it. 
+If the pop-up disappears before you can click it, you can allow it manually:
+1. Open **Windows Security**.
+2. Go to **Virus & threat protection**.
+3. Select **Protection history**.
+4. Look for recent **Smart App Control** or blocked app entries, select them, and choose to allow the app.
+
+**Option 2 — run it without the installer (recommended).** Build it yourself with
 `pnpm dist:win` and run `release\win-unpacked\NotWhisperFlow.exe` directly. Copy that folder
 anywhere you like and make a shortcut to the `.exe`. Code you compiled on your own machine
 isn't subject to the same download-reputation checks, so nothing needs to be turned off.
 
-**Option 2 — turn Smart App Control off.** Windows Security → **App & browser control** →
+**Option 3 — turn Smart App Control off.** Windows Security → **App & browser control** →
 **Smart App Control settings** → **Off**.
 
 > ⚠️ **This is a one-way change.** Once Smart App Control is set to Off, Windows will not let
 > you turn it back on — re-enabling it requires a clean reinstall or reset of Windows. It
 > also switches that protection off for *every* program on the machine, not just this one.
-> Only do this if you understand and accept that trade-off; otherwise use Option 1.
+> Only do this if you understand and accept that trade-off; otherwise use Option 1 or 2.
 
 Each release publishes the SHA-256 of its installer. Verify your download matches before
 running it:

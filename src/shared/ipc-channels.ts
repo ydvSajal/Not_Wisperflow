@@ -8,6 +8,8 @@ export const IPC = {
   dictationCancel: 'dictation:cancel',
   /** Bar sends captured PCM (Float32, 16kHz mono) when recording stops */
   dictationAudio: 'dictation:audio',
+  /** Bar sends partial PCM chunk during recording */
+  dictationAudioChunk: 'dictation:audio-chunk',
   /** Bar reports mic failure (permission denied etc.) */
   dictationCaptureError: 'dictation:capture-error',
 

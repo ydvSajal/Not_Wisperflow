@@ -64,9 +64,15 @@ export class MicRecorder {
   private node: AudioWorkletNode | null = null
   private chunks: Float32Array[] = []
   private startedAt = 0
+  private lastChunkAt = 0
   private peak = 0
+  private chunkInterval: NodeJS.Timeout | null = null
 
-  async start(onLevel: (level: number) => void): Promise<void> {
+  async start(
+    onLevel: (level: number) => void,
+    onChunk?: (pcm: Float32Array, durationMs: number) => void,
+    chunkIntervalMs = 4000
+  ): Promise<void> {
     this.chunks = []
     this.peak = 0
     this.stream = await navigator.mediaDevices.getUserMedia({
@@ -112,20 +118,53 @@ export class MicRecorder {
       onLevel(Math.min(1, Math.sqrt(sum / chunk.length) * 4))
     }
     source.connect(this.node)
+    
+    if (onChunk && chunkIntervalMs > 0) {
+      this.chunkInterval = setInterval(() => {
+        this.flushChunk(onChunk)
+      }, chunkIntervalMs)
+    }
+
     // Keep the graph alive without echoing mic audio to speakers
     const silence = this.ctx.createGain()
     silence.gain.value = 0
     this.node.connect(silence)
     silence.connect(this.ctx.destination)
     this.startedAt = performance.now()
+    this.lastChunkAt = this.startedAt
+  }
+
+  private flushChunk(onChunk: (pcm: Float32Array, durationMs: number) => void): void {
+    if (this.chunks.length === 0) return
+    const now = performance.now()
+    const durationMs = Math.round(now - this.lastChunkAt)
+    const nativeRate = this.ctx?.sampleRate ?? TARGET_SAMPLE_RATE
+
+    const chunksToProcess = this.chunks
+    this.chunks = [] // Reset chunks for the next segment
+    this.lastChunkAt = now
+
+    const total = chunksToProcess.reduce((n, c) => n + c.length, 0)
+    const raw = new Float32Array(total)
+    let offset = 0
+    for (const c of chunksToProcess) {
+      raw.set(c, offset)
+      offset += c.length
+    }
+    const pcm = resample(raw, nativeRate, TARGET_SAMPLE_RATE)
+    onChunk(pcm, durationMs)
   }
 
   async stop(): Promise<RecordingResult> {
-    const durationMs = Math.round(performance.now() - this.startedAt)
+    const durationMs = Math.round(performance.now() - this.lastChunkAt)
     const chunks = this.chunks
     const nativeRate = this.ctx?.sampleRate ?? TARGET_SAMPLE_RATE
     const state = this.ctx?.state ?? 'closed'
     this.chunks = []
+    if (this.chunkInterval) {
+      clearInterval(this.chunkInterval)
+      this.chunkInterval = null
+    }
     await this.teardown()
     const total = chunks.reduce((n, c) => n + c.length, 0)
     const raw = new Float32Array(total)
@@ -151,6 +190,10 @@ export class MicRecorder {
 
   async discard(): Promise<void> {
     this.chunks = []
+    if (this.chunkInterval) {
+      clearInterval(this.chunkInterval)
+      this.chunkInterval = null
+    }
     await this.teardown()
   }
 
